@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEAAR · Flight Path Authoring Mock-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vp-red:#ff0037;
+    --path-blue:#3da9ff;
+    --ink:#e8ecef;
+    --dim:#9aa4ac;
+    --panel:rgba(12,16,20,.84);
+    --panel-solid:#0d1116;
+    --panel-line:rgba(255,255,255,.14);
+    --green:#3ddc84;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#16222e;
+    font-family:'Roboto',system-ui,sans-serif;color:var(--ink);}
+  #scene{position:fixed;inset:0;cursor:crosshair;touch-action:none;}
+  .hud{position:fixed;z-index:10;pointer-events:none;}
+  .hud .clickable{pointer-events:auto;}
+
+  /* Top bar */
+  #topbar{top:0;left:0;right:0;display:flex;align-items:center;gap:14px;z-index:12;height:46px;
+    padding:0 16px;background:rgba(10,13,17,.94);border-bottom:1px solid var(--panel-line);}
+  #brand{font-family:'Antonio',sans-serif;font-size:20px;letter-spacing:.06em;
+    text-transform:uppercase;display:flex;align-items:baseline;gap:10px;
+    min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  #brand .accent{color:var(--vp-red);}
+  #brand small{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);
+    letter-spacing:.08em;text-transform:none;}
+  #phase{margin-left:auto;flex:none;font-family:'Roboto Mono',monospace;font-size:10px;
+    color:var(--ink);letter-spacing:.12em;background:rgba(12,16,20,.8);
+    border:1px solid var(--panel-line);border-radius:4px;padding:5px 9px;white-space:nowrap;}
+
+  /* Prompt pill */
+  #prompt{top:56px;left:50%;transform:translateX(-50%);box-sizing:border-box;
+    background:var(--panel);border:1px solid var(--panel-line);
+    border-left:3px solid var(--path-blue);z-index:11;
+    padding:10px 18px;border-radius:4px;font-size:14px;
+    max-width:min(560px, calc(100vw - 32px));text-align:center;
+    backdrop-filter:blur(6px);transition:border-left-color .2s;}
+  #prompt.target-mode{border-left-color:var(--vp-red);}
+  #prompt.done-mode{border-left-color:var(--green);}
+  #prompt b{font-weight:700;}
+  #prompt .sub{display:block;font-size:11px;color:var(--dim);margin-top:3px;
+    font-family:'Roboto Mono',monospace;}
+
+  /* Readout */
+  #readout{top:54px;left:16px;background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:4px;padding:10px 12px;font-family:'Roboto Mono',monospace;
+    font-size:11px;line-height:1.7;color:var(--dim);min-width:150px;}
+  #readout .v{color:var(--ink);}
+  #readout .label{font-family:'Antonio',sans-serif;font-size:13px;letter-spacing:.1em;
+    color:var(--ink);text-transform:uppercase;margin-bottom:4px;}
+
+  /* Flight path layer panel */
+  #paths{top:54px;right:16px;width:300px;max-width:calc(100vw - 32px);max-height:64vh;
+    display:flex;flex-direction:column;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:4px;
+    backdrop-filter:blur(6px);overflow:hidden;}
+  #paths .head{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;border-bottom:1px solid var(--panel-line);}
+  #paths .head .label{font-family:'Antonio',sans-serif;font-size:14px;letter-spacing:.1em;
+    text-transform:uppercase;}
+  #paths .scroll{overflow-y:auto;}
+  .addPath{pointer-events:auto;cursor:pointer;border:1px solid var(--panel-line);
+    background:transparent;color:var(--ink);border-radius:4px;width:26px;height:26px;
+    font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .addPath:hover{border-color:var(--path-blue);color:var(--path-blue);}
+
+  .pathRow{border-bottom:1px solid rgba(255,255,255,.07);}
+  .pathHead{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;
+    pointer-events:auto;}
+  .pathRow.active .pathHead{background:rgba(61,169,255,.1);}
+  .swatch{width:11px;height:11px;border-radius:2px;flex:none;}
+  .pathName{flex:1;background:transparent;border:none;color:var(--ink);font-size:13px;
+    font-weight:500;font-family:'Roboto',sans-serif;padding:2px 3px;border-radius:3px;
+    pointer-events:auto;min-width:0;text-overflow:ellipsis;}
+  .pathName:focus{outline:none;background:rgba(255,255,255,.1);}
+  .pathMeta{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--dim);flex:none;}
+  .iconBtn{pointer-events:auto;cursor:pointer;border:none;background:transparent;
+    color:var(--dim);font-size:13px;line-height:1;padding:3px 5px;border-radius:3px;flex:none;}
+  .iconBtn:hover{color:var(--ink);background:rgba(255,255,255,.08);}
+  .iconBtn.del:hover{color:var(--vp-red);}
+  .caret{font-size:9px;color:var(--dim);width:10px;transition:transform .15s;}
+  .pathRow.collapsed .caret{transform:rotate(-90deg);}
+  .pathRow.collapsed .wpList{display:none;}
+
+  .wpList{padding:2px 0 6px 0;}
+  .wp{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 14px;
+    font-family:'Roboto Mono',monospace;font-size:11px;color:#b6bec5;
+    pointer-events:auto;cursor:grab;border-top:1px solid transparent;border-bottom:1px solid transparent;}
+  .wp:hover{background:rgba(255,255,255,.04);}
+  .wp.dragging{opacity:.4;}
+  .wp.drop-before{border-top:2px solid var(--path-blue);}
+  .wp.drop-after{border-bottom:2px solid var(--path-blue);}
+  .wp .grip{color:#5b646c;font-size:12px;cursor:grab;flex:none;}
+  .wp .idx{color:var(--path-blue);font-weight:500;flex:none;}
+  .wp .co{flex:1;line-height:1.5;min-width:0;word-break:break-word;}
+  .wp .co .tgt{color:var(--vp-red);}
+  .wp.empty{color:var(--dim);font-style:italic;cursor:default;justify-content:center;}
+
+  /* PiP */
+  #pipFrame{left:16px;bottom:16px;width:340px;height:212px;
+    border:1px solid var(--panel-line);border-radius:4px;overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,.55);display:none;}
+  #pipFrame .pipLabel{position:absolute;top:0;left:0;right:0;display:flex;
+    justify-content:space-between;align-items:center;padding:5px 9px;
+    background:linear-gradient(180deg,rgba(8,10,13,.78),rgba(8,10,13,0));
+    font-family:'Roboto Mono',monospace;font-size:10px;letter-spacing:.1em;
+    color:var(--ink);text-transform:uppercase;}
+  #pipFrame .rec{display:inline-flex;align-items:center;gap:5px;color:var(--dim);}
+  #pipFrame .rec .dot{width:7px;height:7px;border-radius:50%;background:var(--vp-red);
+    animation:blink 1.2s steps(2) infinite;}
+  @keyframes blink{50%{opacity:.25;}}
+
+  /* Buttons */
+  #actions{right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  #actions .btn{width:214px;justify-content:flex-start;}
+  #actions .btn kbd{margin-left:auto;}
+  .btn{pointer-events:auto;background:var(--panel);border:1px solid var(--panel-line);
+    color:var(--ink);font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
+    padding:9px 16px;border-radius:4px;cursor:pointer;display:flex;gap:8px;align-items:center;
+    backdrop-filter:blur(6px);transition:border-color .15s,background .15s;}
+  .btn:hover{border-color:rgba(255,255,255,.4);}
+  .btn kbd{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--dim);
+    border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:1px 5px;}
+  .btn.primary{border-color:var(--path-blue);}
+  .btn.danger:hover{border-color:var(--vp-red);}
+  .btn.toggle.active{background:rgba(255,210,61,.16);border-color:#ffd23d;}
+  .btn.preview{border-color:var(--green);}
+  .btn.preview.active{background:rgba(61,220,132,.15);}
+  .btn[disabled]{opacity:.4;pointer-events:none;}
+
+  /* Footer help */
+  #help{bottom:16px;left:50%;transform:translateX(-50%);
+    font-family:'Roboto Mono',monospace;font-size:10.5px;color:var(--dim);
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:4px;
+    padding:7px 14px;display:flex;gap:16px;white-space:nowrap;}
+  #help span b{color:var(--ink);font-weight:500;}
+
+  /* Gizmo layer */
+  #gizmoLayer{position:fixed;inset:0;z-index:20;pointer-events:none;}
+  .gizmo{position:absolute;width:0;height:0;}
+  .gizmo .gz-sq{position:absolute;left:-7px;top:-7px;width:14px;height:14px;
+    background:rgba(232,236,239,.9);border:1px solid #0d1116;border-radius:2px;
+    cursor:move;pointer-events:auto;}
+  .gizmo .gz-x{position:absolute;left:6px;top:-4px;width:34px;height:8px;
+    background:#ff4d4d;border-radius:4px;cursor:ew-resize;pointer-events:auto;
+    box-shadow:0 0 0 1px rgba(0,0,0,.4);}
+  .gizmo .gz-x::after{content:'';position:absolute;right:-7px;top:-3px;
+    border-left:8px solid #ff4d4d;border-top:7px solid transparent;border-bottom:7px solid transparent;}
+  .gizmo .gz-y{position:absolute;left:-4px;top:-40px;width:8px;height:34px;
+    background:var(--green);border-radius:4px;cursor:ns-resize;pointer-events:auto;
+    box-shadow:0 0 0 1px rgba(0,0,0,.4);}
+  .gizmo .gz-y::after{content:'';position:absolute;top:-7px;left:-3px;
+    border-bottom:8px solid var(--green);border-left:7px solid transparent;border-right:7px solid transparent;}
+  .gizmo .gz-lab{position:absolute;font-family:'Roboto Mono',monospace;font-size:9px;
+    color:var(--dim);pointer-events:none;white-space:nowrap;}
+  .gizmo .gz-minus{position:absolute;left:14px;top:-30px;width:20px;height:20px;
+    border-radius:50%;background:var(--panel-solid);border:1px solid var(--vp-red);
+    color:var(--vp-red);font-size:15px;line-height:17px;text-align:center;cursor:pointer;
+    pointer-events:auto;}
+  .gizmo .gz-minus:hover{background:var(--vp-red);color:#fff;}
+
+  /* Modal */
+  #modalWrap{position:fixed;inset:0;z-index:40;display:none;align-items:center;
+    justify-content:center;background:rgba(6,9,12,.55);backdrop-filter:blur(3px);}
+  #modalWrap.show{display:flex;}
+  .modalCard{background:var(--panel-solid);border:1px solid var(--panel-line);
+    border-top:3px solid var(--path-blue);border-radius:6px;padding:22px 24px;max-width:420px;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .modalCard.warn{border-top-color:var(--vp-red);}
+  .modalCard h3{font-family:'Antonio',sans-serif;font-size:19px;letter-spacing:.04em;
+    font-weight:600;margin-bottom:8px;}
+  .modalCard p{font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:18px;}
+  .modalBtns{display:flex;gap:10px;justify-content:flex-end;}
+  .modalBtns button{cursor:pointer;font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
+    padding:9px 16px;border-radius:4px;border:1px solid var(--panel-line);background:transparent;
+    color:var(--ink);}
+  .modalBtns button.primary{border-color:var(--path-blue);background:rgba(61,169,255,.14);}
+  .modalBtns button.danger{border-color:var(--vp-red);background:rgba(255,0,55,.14);color:#ff7d97;}
+  .modalBtns button:hover{filter:brightness(1.2);}
+  .modalCard.info{border-top-color:var(--green);max-width:480px;}
+  .instr{margin-bottom:18px;}
+  .instr .ln{display:flex;gap:10px;align-items:flex-start;padding:6px 0;
+    border-top:1px dashed rgba(255,255,255,.09);font-size:13px;color:var(--ink);line-height:1.5;}
+  .instr .ln:first-child{border-top:none;}
+  .instr .ln .n{flex:none;width:20px;height:20px;border-radius:50%;background:rgba(61,169,255,.16);
+    border:1px solid var(--path-blue);color:var(--path-blue);font-family:'Roboto Mono',monospace;
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .instr .keys{margin-top:4px;font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);
+    display:flex;flex-wrap:wrap;gap:8px;}
+  .instr .keys b{color:var(--ink);font-weight:500;}
+
+  /* speed chevrons (1-5 fast-forward arrows) */
+  .spd{display:inline-flex;gap:1px;align-items:center;cursor:pointer;pointer-events:auto;
+    padding:1px 3px;border-radius:3px;}
+  .spd:hover{background:rgba(255,255,255,.08);}
+  .cv{font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:#3d454c;line-height:1;}
+  .cv.on{color:var(--green);}
+  .wp .spd{flex:none;}
+  .gizmo .gz-spd{position:absolute;left:14px;top:8px;display:flex;gap:1px;align-items:center;
+    background:var(--panel-solid);border:1px solid var(--panel-line);border-radius:3px;padding:2px 5px;
+    pointer-events:auto;cursor:pointer;}
+  .gizmo .gz-spd:hover{border-color:var(--green);}
+  #pipFrame .pipCtl{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:stretch;gap:6px;}
+  #pipFrame .pipChip{display:flex;align-items:center;gap:6px;background:rgba(8,10,13,.78);
+    border:1px solid var(--panel-line);border-radius:4px;padding:4px 9px;pointer-events:auto;}
+  #pipFrame #pipSpeed{cursor:pointer;}
+  #pipFrame #pipSpeed:hover{border-color:var(--green);}
+  #pipFrame .pipChip .lab{font-family:'Roboto Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--dim);}
+  #pipFrame .pipChip .hv{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--ink);min-width:42px;text-align:center;}
+  #pipFrame .pipChip .hb{pointer-events:auto;cursor:pointer;width:18px;height:18px;border-radius:3px;
+    border:1px solid var(--panel-line);background:transparent;color:var(--ink);font-size:13px;line-height:1;
+    display:flex;align-items:center;justify-content:center;}
+  #pipFrame .pipChip .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
+  .pipMax{pointer-events:auto;cursor:pointer;border:1px solid var(--panel-line);background:rgba(8,10,13,.6);
+    color:var(--ink);width:20px;height:18px;border-radius:3px;font-size:11px;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;margin-right:6px;}
+  .pipMax:hover{border-color:var(--path-blue);color:var(--path-blue);}
+  #pipFrame.max{left:50%;top:58px;transform:translateX(-50%);width:70vw;height:calc(100vh - 150px);
+    z-index:8;bottom:auto;}
+
+  /* total-time modal */
+  .timeBody{display:flex;gap:18px;align-items:center;justify-content:center;margin:10px 0 20px;}
+  .timeLabels{display:flex;flex-direction:column;justify-content:space-between;height:200px;
+    font-family:'Roboto Mono',monospace;font-size:10px;color:var(--dim);text-align:right;letter-spacing:.05em;}
+  .timeTrack{position:relative;width:10px;height:200px;background:rgba(255,255,255,.1);border-radius:5px;cursor:pointer;flex:none;}
+  .timeFill{position:absolute;left:0;right:0;bottom:0;background:var(--path-blue);border-radius:5px;}
+  .timeHandle{position:absolute;left:50%;top:0;width:26px;height:26px;border-radius:50%;background:var(--panel-solid);
+    border:2px solid var(--path-blue);transform:translate(-50%,-50%);cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.5);}
+  .timeReadout{min-width:128px;}
+  .timeReadout .big{font-family:'Antonio',sans-serif;font-size:44px;line-height:1;color:var(--ink);}
+  .timeReadout .sub{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);margin-top:8px;line-height:1.6;}
+
+  /* gizmo trash + height stepper (top-down view) */
+  .gizmo .gz-trash{position:absolute;left:14px;top:-32px;width:22px;height:22px;border-radius:50%;
+    background:var(--panel-solid);border:1px solid var(--panel-line);color:var(--dim);font-size:11px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+  .gizmo .gz-trash:hover{border-color:var(--vp-red);color:var(--vp-red);}
+  .gizmo .gz-hgt{position:absolute;left:14px;top:30px;display:flex;align-items:center;gap:3px;
+    background:var(--panel-solid);border:1px solid var(--panel-line);border-radius:3px;padding:2px 4px;pointer-events:auto;}
+  .gizmo .gz-hgt .hb{cursor:pointer;width:16px;height:16px;border-radius:3px;border:1px solid var(--panel-line);
+    background:transparent;color:var(--ink);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .gizmo .gz-hgt .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
+  .gizmo .gz-hgt .hv{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--ink);min-width:38px;text-align:center;}
+  #pipInput{position:absolute;inset:0;pointer-events:none;}
+  #pipFrame.max #pipInput{cursor:grab;}
+
+  /* waypoint two-row layout with height control */
+  .wp{flex-direction:column;align-items:stretch;gap:4px;}
+  .wpTop{display:flex;align-items:center;gap:7px;}
+  .wpCtl{display:flex;align-items:center;gap:10px;padding-left:21px;}
+  .hgt{display:inline-flex;align-items:center;gap:4px;}
+  .hgt .hb{pointer-events:auto;cursor:pointer;width:17px;height:17px;border-radius:3px;border:1px solid var(--panel-line);
+    background:transparent;color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .hgt .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
+  .hgt .hv{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--ink);min-width:42px;text-align:center;}
+
+  @media (hover:none){ .btn{padding:13px 20px;font-size:14px;} }
+  @media (max-width:920px){
+    #help{display:none;}
+    #pipFrame{width:248px;height:155px;}
+    #paths{width:240px;}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div class="hud" id="topbar">
+  <div id="brand">GEAAR<span class="accent">/</span>FLIGHT PATH <small>authoring mock-up · v0.2</small></div>
+  <div id="phase">PATH CREATION &amp; EDIT</div>
+</div>
+
+<div class="hud" id="prompt"></div>
+
+<div class="hud" id="readout">
+  <div class="label">Cursor</div>
+  <div>E <span class="v" id="roX">–</span> m</div>
+  <div>N <span class="v" id="roZ">–</span> m</div>
+  <div>Elev <span class="v" id="roElev">–</span> m</div>
+  <div>AGL <span class="v" id="roAlt">120</span> m</div>
+  <div>Drone Y <span class="v" id="roDrone">–</span> m</div>
+  <div style="margin-top:6px;">Waypoints <span class="v" id="roCount">0</span></div>
+  <div>Path <span class="v" id="roLen">0</span> m</div>
+  <div>Time <span class="v" id="roTime">0:00</span></div>
+</div>
+
+<div class="hud" id="paths">
+  <div class="head">
+    <span class="label">Flight paths</span>
+    <button class="addPath" id="btnAddPath" title="New flight path">+</button>
+  </div>
+  <div class="scroll" id="pathScroll"></div>
+</div>
+
+<div class="hud" id="pipFrame">
+  <div class="pipInput" id="pipInput"></div>
+  <div class="pipLabel"><span>Camera preview</span>
+    <span class="rec"><button class="pipMax clickable" id="btnPipMax" title="Maximise view">⤢</button>
+    <span class="dot"></span><span id="pipState">live</span></span></div>
+  <div class="pipCtl" id="pipCtl" style="display:none;">
+    <div class="pipChip" id="pipSpeed"></div>
+    <div class="pipChip" id="pipHeight"></div>
+  </div>
+</div>
+
+<div class="hud" id="actions">
+  <button class="btn preview clickable" id="btnPreview" disabled>▶ Preview flight</button>
+  <button class="btn clickable" id="btnTime" disabled>◷ Total time</button>
+  <button class="btn toggle clickable" id="btnMove">✛ Move nodes <kbd>Ctrl</kbd></button>
+  <button class="btn clickable" id="btnAddWp">＋ Add waypoints</button>
+  <button class="btn clickable" id="btnRecentre">⌖ Recentre <kbd>I</kbd></button>
+  <button class="btn primary clickable" id="btnEnd">Finish path <kbd>Esc</kbd></button>
+  <button class="btn danger clickable" id="btnReset">Reset all</button>
+</div>
+
+<div class="hud" id="help"></div>
+
+<div id="gizmoLayer"></div>
+<div id="modalWrap"><div class="modalCard" id="modalCard"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =========================================================================
+   GEAAR Flight Path Authoring Mock-up
+   Reference implementation for the Unity rebuild.
+
+   DATA MODEL
+   - paths[] : each = { id, name, colour, nodes:[ {dronePos, target} ], collapsed }
+       node.dronePos : Vector3, y = terrainHeightAt(x,z) + 120 m AGL
+       node.target   : Vector3, y = terrainHeightAt(x,z)  (on the ground)
+   - One path is "active": it is the one you create / edit / fly. Its viewing
+     cones light the darkened overlay; other paths draw as faint splines.
+
+   GEOMETRY
+   - terrainHeightAt(x,z) is the single source of truth: it displaces the mesh
+     AND is what the raycaster resolves against, so placed points sit on the
+     surface and the spline rises / falls with the ground (proving AGL).
+   - Drone path  = centripetal Catmull-Rom through node.dronePos (no overshoot,
+     film-friendly), sampled densely + arc-length spaced for smooth motion.
+   - Target path = per-segment linear interpolation between node.target values.
+   - Viewing cones render into an offscreen ortho lightmap (MAX blend so
+     overlaps never over-brighten); the dark overlay is punched through where
+     light > 0. Keyframe cones write 1.0, the swept travel area writes ~0.5.
+
+   EDITING
+   - Hold Ctrl or toggle "Move nodes" to show XY gizmos on every drone + target
+     handle (X arrow = east, Y arrow = north, square = free). A floating minus
+     on each waypoint removes that node (with confirm).
+   - Right-click / Esc / End button raise the end-mode modal.
+   ========================================================================= */
+
+const WORLD       = 9600;
+const TILE        = 2400;
+const DEFAULT_AGL = 120;    // default drone altitude (m AGL) = 6 x 20 m cubes
+const HEIGHT_STEP = 20;     // height adjusts in 20 m increments (one cube)
+const HEIGHT_MIN  = 20;
+const HEIGHT_MAX  = 300;
+const CONE_HALF   = 24;
+const SWEPT_LIGHT = 0.5;
+const DARKNESS    = 0.62;
+const PREVIEW_SPD = 40;
+const HORIZON     = 0x16222e;
+const PALETTE     = [0x3da9ff, 0xff8a3d, 0x3ddc84, 0xc77dff, 0xffd23d, 0xff5b7c];
+// Per-waypoint speed: level 1..5 maps to a cruise velocity (m/s). 2 = normal.
+const SPEED_VELS  = [0, 12, 24, 40, 58, 80];
+const EASE_FRAC   = 0.22;   // fraction of the path eased in / out (large, for filming)
+const EASE_FLOOR  = 0.12;   // speed at the very start / end as a fraction of cruise
+
+// Localised mountains (x, z, amplitude, radius) summed on top of the rolling base.
+const PEAKS=[
+  [-3200,-3000, 250, 1500],
+  [ 2400, 2800, 320, 1700],
+  [ 3600,-1600, 230, 1300],
+  [-1200, 2200, 210, 1400],
+  [-3400, 1300, 190, 1100],
+  [ 1000,-3200, 240, 1500]
+];
+function terrainHeightAt(x, z){
+  let h = 0;
+  h += 150 * Math.sin(x*0.00055 + 1.3) * Math.cos(z*0.00048 - 0.7);  // big rolling hills
+  h += 70  * Math.sin(x*0.0013  - 2.1) * Math.cos(z*0.0016  + 1.1);
+  h += 28  * Math.sin(x*0.0039  + 0.4) * Math.cos(z*0.0041  + 2.3);
+  h += 40  * Math.sin((x + z)*0.00085);
+  for(let i=0;i<PEAKS.length;i++){ const p=PEAKS[i];
+    const dx=x-p[0], dz=z-p[1]; h += p[2]*Math.exp(-(dx*dx+dz*dz)/(2*p[3]*p[3])); }
+  return h;
+}
+
+// ---------- renderer / scene ----------
+const canvas   = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(HORIZON);
+scene.fog = new THREE.Fog(HORIZON, WORLD*0.32, WORLD*0.95);
+scene.add(new THREE.AmbientLight(0xffffff, 0.78));
+const sun = new THREE.DirectionalLight(0xfff2dd, 0.85);
+sun.position.set(1600, 2600, 1100); scene.add(sun);
+
+const mapCam = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 1, 32000);
+mapCam.layers.enable(1);
+let camHeight = 1500;
+const camCentre = new THREE.Vector3(0,0,0), camGoal = new THREE.Vector3(0,0,0);
+function placeMapCam(){
+  mapCam.position.set(camCentre.x, camHeight, camCentre.z);
+  mapCam.up.set(0,0,-1);
+  mapCam.lookAt(camCentre.x, 0, camCentre.z);
+}
+placeMapCam();
+
+const pipCam = new THREE.PerspectiveCamera(50, 340/212, 2, 32000);
+// editCam is the 3D editing view shown in the preview window while Move nodes is on.
+const editCam = new THREE.PerspectiveCamera(50, 1, 2, 32000); editCam.layers.enable(2);
+let editYaw=-0.7, editPitch=0.62, selectedNode=0;
+
+// ---------- sky ----------
+scene.add(new THREE.Mesh(
+  new THREE.SphereGeometry(16000, 32, 18),
+  new THREE.ShaderMaterial({ side:THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{ top:{value:new THREE.Color(0x2a5a86)}, mid:{value:new THREE.Color(0x6f93ad)},
+               bot:{value:new THREE.Color(HORIZON)} },
+    vertexShader:`varying vec3 vP; void main(){ vP=position;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP;
+      void main(){ float h=normalize(vP).y;
+        vec3 c = h>0.0 ? mix(mid,top,smoothstep(0.0,0.55,h)) : mix(mid,bot,smoothstep(0.0,0.28,-h));
+        gl_FragColor=vec4(c,1.);}` })
+));
+
+// ---------- terrain ----------
+function buildTerrainTexture(){
+  const S=1024, c=document.createElement('canvas'); c.width=c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#4b5a33'; g.fillRect(0,0,S,S);
+  const pals=['#52643a','#5c6e3e','#6b6f44','#7a6e4a','#8a7850','#475c33','#3f5631'];
+  for(let i=0;i<300;i++){ g.fillStyle=pals[(Math.random()*pals.length)|0];
+    g.globalAlpha=0.22+Math.random()*0.34; g.beginPath();
+    g.ellipse(Math.random()*S,Math.random()*S,18+Math.random()*80,12+Math.random()*54,Math.random()*Math.PI,0,Math.PI*2);
+    g.fill(); }
+  g.globalAlpha=1;
+  for(let i=0;i<6;i++){ g.fillStyle=['#9a8a5c','#a39263','#8f7f52'][(i%3)]; g.globalAlpha=.7;
+    g.fillRect(120+Math.random()*120+i*70,110+i*120,150+Math.random()*150,60); }
+  g.globalAlpha=1; g.strokeStyle='#7d7f78'; g.lineCap='round'; g.lineWidth=8;
+  g.beginPath(); g.moveTo(0,512); g.bezierCurveTo(300,470,700,560,S,500); g.stroke();
+  g.beginPath(); g.moveTo(512,0); g.bezierCurveTo(480,350,560,700,512,S); g.stroke();
+  for(let i=0;i<5200;i++){ g.fillStyle=Math.random()>.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.07)';
+    g.fillRect(Math.random()*S,Math.random()*S,2,2); }
+  const step=S/(TILE/100);
+  g.strokeStyle='rgba(255,255,255,.07)'; g.lineWidth=1;
+  for(let p=0;p<=S;p+=step){ g.beginPath(); g.moveTo(p,0); g.lineTo(p,S); g.stroke();
+    g.beginPath(); g.moveTo(0,p); g.lineTo(S,p); g.stroke(); }
+  g.strokeStyle='rgba(255,255,255,.12)';
+  for(let p=0;p<=S;p+=step*5){ g.beginPath(); g.moveTo(p,0); g.lineTo(p,S); g.stroke();
+    g.beginPath(); g.moveTo(0,p); g.lineTo(S,p); g.stroke(); }
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(WORLD/TILE,WORLD/TILE);
+  tex.anisotropy=renderer.capabilities.getMaxAnisotropy(); return tex;
+}
+const SEG=192;
+function buildTerrainGeometry(){
+  const g=new THREE.BufferGeometry();
+  const pos=new Float32Array((SEG+1)*(SEG+1)*3), uv=new Float32Array((SEG+1)*(SEG+1)*2);
+  let p=0,u=0;
+  for(let i=0;i<=SEG;i++) for(let j=0;j<=SEG;j++){
+    const x=-WORLD/2+WORLD*(j/SEG), z=-WORLD/2+WORLD*(i/SEG);
+    pos[p++]=x; pos[p++]=terrainHeightAt(x,z); pos[p++]=z; uv[u++]=j/SEG; uv[u++]=i/SEG;
+  }
+  const idx=[];
+  for(let i=0;i<SEG;i++) for(let j=0;j<SEG;j++){
+    const a=i*(SEG+1)+j,b=a+1,c=a+(SEG+1),d=c+1; idx.push(a,c,b,b,c,d); }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+const terrainGeo=buildTerrainGeometry();
+const ground=new THREE.Mesh(terrainGeo,new THREE.MeshLambertMaterial({map:buildTerrainTexture()}));
+scene.add(ground);
+
+(function tileSeams(){
+  const pts=[], lift=3;
+  for(let t=-WORLD/2;t<=WORLD/2+1;t+=TILE){
+    for(let s=-WORLD/2;s<WORLD/2;s+=WORLD/SEG){
+      const s2=s+WORLD/SEG;
+      pts.push(t,terrainHeightAt(t,s)+lift,s, t,terrainHeightAt(t,s2)+lift,s2);
+      pts.push(s,terrainHeightAt(s,t)+lift,t, s2,terrainHeightAt(s2,t)+lift,t);
+    }
+  }
+  scene.add(new THREE.LineSegments(
+    new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(pts,3)),
+    new THREE.LineBasicMaterial({color:0x8fb6d6,transparent:true,opacity:.35})));
+})();
+
+(function scenery(){
+  let seed=99; const rnd=()=>(seed=(seed*1664525+1013904223)%4294967296)/4294967296;
+  const greys=[0x9aa0a6,0x8a9098,0xb4b9bd,0x787f86,0xc2c0b8];
+  function box(x,z,w,d,h,col){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:col}));
+    m.position.set(x,terrainHeightAt(x,z)+h/2,z); m.rotation.y=rnd()*Math.PI; scene.add(m);
+  }
+  [[-1800,-1200],[2600,900],[-700,3100],[3400,-2600],[600,-300]].forEach(([cx,cz])=>{
+    const n=10+(rnd()*14|0);
+    for(let i=0;i<n;i++){ const x=cx+(rnd()-0.5)*900,z=cz+(rnd()-0.5)*900;
+      box(x,z,18+rnd()*34,18+rnd()*34,10+rnd()*44,greys[rnd()*greys.length|0]); }
+  });
+  for(let i=0;i<70;i++){ const x=(rnd()-0.5)*WORLD*0.92,z=(rnd()-0.5)*WORLD*0.92;
+    box(x,z,14+rnd()*22,14+rnd()*22,8+rnd()*22,greys[rnd()*greys.length|0]); }
+  const mastMat=new THREE.MeshLambertMaterial({color:0xd23b3b});
+  for(let i=0;i<10;i++){ const x=(rnd()-0.5)*WORLD*0.8,z=(rnd()-0.5)*WORLD*0.8,hh=60+rnd()*40;
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(1.4,2.4,hh,7),mastMat);
+    m.position.set(x,terrainHeightAt(x,z)+hh/2,z); scene.add(m); }
+  const trunkMat=new THREE.MeshLambertMaterial({color:0x5b4a32});
+  const leafMat=new THREE.MeshLambertMaterial({color:0x37532e});
+  for(let i=0;i<260;i++){ const x=(rnd()-0.5)*WORLD*0.95,z=(rnd()-0.5)*WORLD*0.95;
+    const y=terrainHeightAt(x,z),s=0.7+rnd()*1.1;
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.7,1,6*s,5),trunkMat);
+    tr.position.set(x,y+3*s,z); scene.add(tr);
+    const lf=new THREE.Mesh(new THREE.ConeGeometry(4.5*s,12*s,6),leafMat);
+    lf.position.set(x,y+6*s+5*s,z); scene.add(lf); }
+})();
+
+// ---------- tall unique landmarks (1-2 per tile) ----------
+(function landmarks(){
+  const mat=c=>new THREE.MeshLambertMaterial({color:c});
+  const basic=c=>new THREE.MeshBasicMaterial({color:c});
+  function lattice(){ const g=new THREE.Group(), h=145;
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(3,9,h,8),mat(0xb24a3a)); t.position.y=h/2; g.add(t);
+    for(let i=1;i<=3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(7-i*1.6,0.8,6,12),mat(0xd9d9d9));
+      r.rotation.x=Math.PI/2; r.position.y=h*i/4; g.add(r); }
+    const b=new THREE.Mesh(new THREE.SphereGeometry(4.5,12,10),basic(0xff3b3b)); b.position.y=h+5; g.add(b); return g; }
+  function waterTower(){ const g=new THREE.Group(), h=72;
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(4,4,h,10),mat(0x9fb0b8)); col.position.y=h/2; g.add(col);
+    const tank=new THREE.Mesh(new THREE.CylinderGeometry(20,20,24,16),mat(0x6fa3b5)); tank.position.y=h+8; g.add(tank);
+    const top=new THREE.Mesh(new THREE.ConeGeometry(21,14,16),mat(0x4d7d8c)); top.position.y=h+27; g.add(top); return g; }
+  function chimney(){ const g=new THREE.Group(), h=170;
+    const c=new THREE.Mesh(new THREE.CylinderGeometry(7,12,h,16),mat(0xcfc8bd)); c.position.y=h/2; g.add(c);
+    const band=new THREE.Mesh(new THREE.CylinderGeometry(7.6,7.6,12,16),mat(0xb24a3a)); band.position.y=h-16; g.add(band); return g; }
+  function obelisk(){ const g=new THREE.Group(), h=125;
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(2.5,9,h,4),mat(0xcdbf9c)); b.rotation.y=Math.PI/4; b.position.y=h/2; g.add(b);
+    const cap=new THREE.Mesh(new THREE.ConeGeometry(4,12,4),mat(0xe6d6a8)); cap.rotation.y=Math.PI/4; cap.position.y=h+6; g.add(cap); return g; }
+  function turbine(){ const g=new THREE.Group(), h=125;
+    const tw=new THREE.Mesh(new THREE.CylinderGeometry(2.5,4.5,h,12),mat(0xf2f2f2)); tw.position.y=h/2; g.add(tw);
+    const nac=new THREE.Mesh(new THREE.BoxGeometry(6,6,14),mat(0xe6e6e6)); nac.position.y=h; g.add(nac);
+    const hub=new THREE.Group(); hub.position.set(0,h,9);
+    for(let i=0;i<3;i++){ const arm=new THREE.Group(); arm.rotation.z=i*2*Math.PI/3;
+      const bl=new THREE.Mesh(new THREE.BoxGeometry(2.6,48,1.2),mat(0xfafafa)); bl.position.y=24; arm.add(bl); hub.add(arm); }
+    g.add(hub); return g; }
+  function dome(){ const g=new THREE.Group(), h=34;
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(22,24,h,20),mat(0xdadfe2)); base.position.y=h/2; g.add(base);
+    const d=new THREE.Mesh(new THREE.SphereGeometry(22,20,12,0,Math.PI*2,0,Math.PI/2),mat(0xeef1f3)); d.position.y=h; g.add(d); return g; }
+  function pyramid(){ const g=new THREE.Group(), h=135;
+    const p=new THREE.Mesh(new THREE.ConeGeometry(72,h,4),mat(0xc9a66b)); p.rotation.y=Math.PI/4; p.position.y=h/2; g.add(p); return g; }
+  const types=[lattice,waterTower,chimney,obelisk,turbine,dome,pyramid];
+  let seed=7; const rnd=()=>(seed=(seed*1103515245+12345)%2147483648)/2147483648;
+  let k=0; const tiles=WORLD/TILE;
+  for(let ti=0;ti<tiles;ti++) for(let tj=0;tj<tiles;tj++){
+    const cx=-WORLD/2+TILE/2+ti*TILE, cz=-WORLD/2+TILE/2+tj*TILE;
+    const count=1+(rnd()<0.4?1:0);
+    for(let n=0;n<count;n++){
+      const x=cx+(rnd()-0.5)*TILE*0.6, z=cz+(rnd()-0.5)*TILE*0.6;
+      const g=types[(k++)%types.length]();
+      g.position.set(x,terrainHeightAt(x,z),z); g.rotation.y+=rnd()*Math.PI*2; scene.add(g);
+    }
+  }
+})();
+
+// ---------- lightmap ----------
+const lightRT=new THREE.WebGLRenderTarget(2048,2048,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
+const lightScene=new THREE.Scene();
+const lightCam=new THREE.OrthographicCamera(-WORLD/2,WORLD/2,WORLD/2,-WORLD/2,1,500);
+lightCam.position.set(0,200,0); lightCam.up.set(0,0,-1); lightCam.lookAt(0,0,0);
+
+function makeSectorGeometry(halfDeg,segs=30){
+  const half=THREE.MathUtils.degToRad(halfDeg), v=[];
+  for(let i=0;i<segs;i++){ const a0=-half+(2*half)*(i/segs), a1=-half+(2*half)*((i+1)/segs);
+    v.push(0,0,0, Math.cos(a0),0,Math.sin(a0), Math.cos(a1),0,Math.sin(a1)); }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(v),3)); return g;
+}
+const sectorGeo=makeSectorGeometry(CONE_HALF);
+function makeSectorMaterial(b){
+  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(b,b,b),side:THREE.DoubleSide,depthTest:false,depthWrite:false});
+  m.blending=THREE.CustomBlending; m.blendEquation=THREE.MaxEquation; m.blendSrc=THREE.OneFactor; m.blendDst=THREE.OneFactor; return m;
+}
+const brightSectorMat=makeSectorMaterial(1.0), sweptSectorMat=makeSectorMaterial(SWEPT_LIGHT);
+function coneLength(d,t){ const dist=Math.hypot(t.x-d.x,t.z-d.z); return THREE.MathUtils.clamp(dist*1.35+40,80,820); }
+function orientSector(m,d,t){ m.position.set(d.x,0,d.z); m.rotation.y=Math.atan2(-(t.z-d.z),t.x-d.x);
+  const L=coneLength(d,t); m.scale.set(L,1,L); }
+
+const activeSector=new THREE.Mesh(sectorGeo,brightSectorMat); activeSector.visible=false; lightScene.add(activeSector);
+const keyframeSectors=[]; const sweptGroup=new THREE.Group(); lightScene.add(sweptGroup);
+
+// ---------- dark overlay (terrain skin) ----------
+const overlay=new THREE.Mesh(terrainGeo,new THREE.ShaderMaterial({
+  transparent:true, depthWrite:false, fog:false,
+  uniforms:{ tLight:{value:lightRT.texture}, uDark:{value:DARKNESS}, uHalf:{value:WORLD/2} },
+  vertexShader:`varying vec3 vW; void main(){ vW=(modelMatrix*vec4(position,1.)).xyz;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader:`uniform sampler2D tLight; uniform float uDark; uniform float uHalf; varying vec3 vW;
+    void main(){ vec2 uv=vec2(vW.x,-vW.z)/(2.0*uHalf)+0.5; float l=texture2D(tLight,uv).r;
+      gl_FragColor=vec4(0.,0.,0.,uDark*(1.0-l)); }`
+}));
+overlay.position.y=2.0; overlay.renderOrder=5; overlay.layers.set(1); overlay.visible=false; scene.add(overlay);
+
+// ---------- markers ----------
+const markerGroup=new THREE.Group(); scene.add(markerGroup);
+function makeDroneMarker(ghost, agl){
+  agl = agl || DEFAULT_AGL;
+  const grp=new THREE.Group();
+  grp.add(new THREE.Mesh(new THREE.SphereGeometry(7,18,14),
+    new THREE.MeshBasicMaterial({color:0x9fd4ff,transparent:ghost,opacity:ghost?0.85:1})));
+  grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,-agl,0)]),
+    new THREE.LineBasicMaterial({color:0x3da9ff,transparent:true,opacity:.55})));
+  const disc=new THREE.Mesh(new THREE.RingGeometry(4,6,24),
+    new THREE.MeshBasicMaterial({color:0x3da9ff,side:THREE.DoubleSide,transparent:true,opacity:.8}));
+  disc.rotation.x=-Math.PI/2; disc.position.y=-agl+2.5; grp.add(disc);
+  grp.traverse(o=>o.renderOrder=10); return grp;
+}
+// Height visualised as a stack of 20 m cubes under the waypoint.
+const cubeGeo=new THREE.BoxGeometry(9,19,9);
+const cubeMat=new THREE.MeshBasicMaterial({color:0x3da9ff,transparent:true,opacity:0.16,depthWrite:false});
+const cubeEdgeGeo=new THREE.EdgesGeometry(cubeGeo);
+const cubeEdgeMat=new THREE.LineBasicMaterial({color:0x9fd4ff,transparent:true,opacity:0.55});
+function makeHeightCubes(agl){
+  const g=new THREE.Group(), count=Math.round(agl/HEIGHT_STEP);
+  for(let k=0;k<count;k++){
+    const m=new THREE.Mesh(cubeGeo,cubeMat); m.position.y=HEIGHT_STEP*k+HEIGHT_STEP/2; g.add(m);
+    const e=new THREE.LineSegments(cubeEdgeGeo,cubeEdgeMat); e.position.copy(m.position); g.add(e);
+  }
+  g.traverse(o=>o.renderOrder=9); return g;
+}
+function makeTargetMarker(ghost){
+  const grp=new THREE.Group();
+  const ring=new THREE.Mesh(new THREE.RingGeometry(7,9.5,28),
+    new THREE.MeshBasicMaterial({color:0xff0037,side:THREE.DoubleSide,transparent:true,opacity:ghost?0.85:1}));
+  ring.rotation.x=-Math.PI/2; grp.add(ring);
+  grp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(
+    [new THREE.Vector3(-13,0,0),new THREE.Vector3(13,0,0),new THREE.Vector3(0,0,-13),new THREE.Vector3(0,0,13)]),
+    new THREE.LineBasicMaterial({color:0xff0037})));
+  grp.traverse(o=>o.renderOrder=10); return grp;
+}
+const ghostDrone=makeDroneMarker(true), ghostTarget=makeTargetMarker(true);
+ghostDrone.visible=ghostTarget.visible=false; scene.add(ghostDrone,ghostTarget);
+
+const sightGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+const sightLine=new THREE.Line(sightGeo,new THREE.LineDashedMaterial({color:0xffffff,transparent:true,opacity:.45,dashSize:10,gapSize:8}));
+sightLine.renderOrder=10; sightLine.visible=false; scene.add(sightLine);
+
+// ---------- 3D transform gizmos (layer 2: only the edit camera sees them) ----------
+const gizmo3D=new THREE.Group(); scene.add(gizmo3D);
+const AXV={ x:new THREE.Vector3(1,0,0), z:new THREE.Vector3(0,0,-1), y:new THREE.Vector3(0,1,0) };
+function makeAxisArrow(axis,color){
+  const grp=new THREE.Group(), L=95, r=3.4, mat=new THREE.MeshBasicMaterial({color});
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,10),mat); shaft.position.y=L/2;
+  const head=new THREE.Mesh(new THREE.ConeGeometry(r*2.7,L*0.3,12),mat); head.position.y=L+L*0.15;
+  grp.add(shaft,head);
+  if(axis==='x') grp.rotation.z=-Math.PI/2;        // points +X (east)
+  else if(axis==='z') grp.rotation.x=-Math.PI/2;   // points -Z (north)
+  grp.traverse(o=>{ if(o.isMesh){ o.userData={axis}; o.layers.set(2); } });
+  return grp;
+}
+function build3DGizmos(){
+  while(gizmo3D.children.length) gizmo3D.remove(gizmo3D.children[0]);
+  const a=active(); if(!a) return;
+  a.nodes.forEach((n,i)=>{
+    const grp=new THREE.Group(); grp.position.copy(n.dronePos);
+    [makeAxisArrow('x',0xff4d4d), makeAxisArrow('z',0x3ddc84), makeAxisArrow('y',0x5fb0ff)].forEach(arw=>{
+      arw.traverse(o=>{ if(o.isMesh) o.userData.node=i; }); grp.add(arw); });
+    const hub=new THREE.Mesh(new THREE.SphereGeometry(6,12,10), new THREE.MeshBasicMaterial({color:0xffffff}));
+    hub.layers.set(2); grp.add(hub);
+    gizmo3D.add(grp);
+  });
+}
+function frameEditCam(){
+  const a=active(); if(!a||!a.nodes.length) return;
+  const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length);
+  let rad=250; a.nodes.forEach(n=>rad=Math.max(rad,n.dronePos.distanceTo(c)));
+  const dist=rad*1.7+500;
+  const dir=new THREE.Vector3(Math.sin(editYaw)*Math.cos(editPitch), Math.sin(editPitch), Math.cos(editYaw)*Math.cos(editPitch));
+  editCam.position.copy(c).addScaledVector(dir,dist); editCam.up.set(0,1,0); editCam.lookAt(c);
+}
+
+// ---------- path visuals ----------
+const pathGroup=new THREE.Group(); scene.add(pathGroup);
+const inactiveGroup=new THREE.Group(); scene.add(inactiveGroup);
+let pathLine=null, targetLine=null, droneCurve=null, curveLen=0;
+const arrowPool=[], ARROW_MAX=80;
+const arrowGeo=new THREE.ConeGeometry(4.4,12,10), arrowMat=new THREE.MeshBasicMaterial({color:0x3da9ff});
+for(let i=0;i<ARROW_MAX;i++){ const a=new THREE.Mesh(arrowGeo,arrowMat); a.visible=false; a.renderOrder=11; pathGroup.add(a); arrowPool.push(a); }
+let arrowPhase=0, arrowCount=0;
+
+function buildCurve(points){ return points.length>=2 ? new THREE.CatmullRomCurve3(points,false,'centripetal') : null; }
+
+// ============================ DATA MODEL ============================
+let pathSeq=0;
+const paths=[];
+let activeId=null;
+const active=()=>paths.find(p=>p.id===activeId)||null;
+
+function newPath(){
+  const colour=PALETTE[pathSeq%PALETTE.length];
+  const p={id:'p'+(++pathSeq), name:'Flight path '+pathSeq, colour, nodes:[], collapsed:false};
+  paths.push(p); return p;
+}
+
+// editor state
+let state='IDLE';          // IDLE | PLACE_FIRST_DRONE | PLACE_TARGET | PLACE_DRONE
+let pending=null;          // {dronePos, target}
+const mouseGround=new THREE.Vector3(); let mouseValid=false;
+let moveToolActive=false, ctrlHeld=false;
+const gizmoOn=()=>moveToolActive||ctrlHeld;
+let previewing=false, previewTime=0;
+let timeScale=1;          // global stretch applied by the total-time modal
+let motion=null;          // precomputed eased motion profile for the active path
+
+// ---------- DOM refs ----------
+const $=id=>document.getElementById(id);
+const promptEl=$('prompt');
+
+function setPrompt(html,mode){ promptEl.innerHTML=html; promptEl.className=mode||''; }
+function refreshPrompt(){
+  const a=active();
+  if(state==='PLACE_FIRST_DRONE')
+    setPrompt('<b>Click to place the starting drone position.</b><span class="sub">Sits 120 m above ground level at that point</span>');
+  else if(state==='PLACE_TARGET')
+    setPrompt('<b>Aim the camera, then click to set its target.</b><span class="sub">The lit cone is what this camera sees · preview bottom-left</span>','target-mode');
+  else if(state==='PLACE_DRONE')
+    setPrompt('<b>Click to place the next drone position.</b><span class="sub">Path follows the cursor · camera keeps its previous target</span>');
+  else if(a && a.nodes.length>=2)
+    setPrompt(`<b>${a.name} · ${a.nodes.length} waypoints · ${Math.round(curveLen)} m.</b><span class="sub">Hold Ctrl or use Move nodes to adjust · Add waypoints to extend · Preview to fly</span>`,'done-mode');
+  else if(a && a.nodes.length>0)
+    setPrompt(`<b>${a.name} · ${a.nodes.length} waypoint.</b><span class="sub">Add another waypoint to make a flyable path</span>`);
+  else
+    setPrompt('<b>Add a flight path with + , or pick one from the list.</b><span class="sub">Then click on the map to lay down waypoints</span>');
+}
+
+// ============================ REBUILD ============================
+function dronePointsForActive(){
+  const a=active(); if(!a) return [];
+  const pts=a.nodes.map(n=>n.dronePos.clone());
+  if(pending && (state==='PLACE_TARGET'||state==='PLACE_DRONE')) pts.push(pending.dronePos.clone());
+  return pts;
+}
+function rebuildPath(){
+  if(pathLine){ pathGroup.remove(pathLine); pathLine.geometry.dispose(); pathLine=null; }
+  if(targetLine){ pathGroup.remove(targetLine); targetLine.geometry.dispose(); targetLine=null; }
+  droneCurve=null; curveLen=0; arrowCount=0; arrowPool.forEach(a=>a.visible=false);
+  const a=active();
+  const pts=dronePointsForActive();
+  if(pts.length>=2){
+    droneCurve=buildCurve(pts); curveLen=droneCurve.getLength();
+    pathLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(droneCurve.getPoints(400)),
+      new THREE.LineBasicMaterial({color:a?a.colour:0x3da9ff,transparent:true,opacity:.95}));
+    pathLine.renderOrder=11; pathGroup.add(pathLine);
+    arrowCount=Math.min(ARROW_MAX,Math.max(4,Math.round(curveLen/60)));
+  }
+  if(a){
+    const tps=a.nodes.map(n=>n.target.clone().setY(n.target.y+2));
+    if(pending && (state==='PLACE_TARGET'||state==='PLACE_DRONE')) tps.push(pending.target.clone().setY(pending.target.y+2));
+    if(tps.length>=2){
+      targetLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(tps),
+        new THREE.LineDashedMaterial({color:0xff5b7c,transparent:true,opacity:.5,dashSize:8,gapSize:7}));
+      targetLine.computeLineDistances(); targetLine.renderOrder=10; pathGroup.add(targetLine);
+    }
+  }
+  $('roLen').textContent=Math.round(curveLen);
+  $('roCount').textContent=a?a.nodes.length:0;
+  buildMotion();
+  $('roTime').textContent = motion ? fmtTime(motion.total*timeScale) : '0:00';
+  updateButtons();
+}
+function updateArrows(dt){
+  if(!droneCurve||arrowCount===0) return;
+  arrowPhase=(arrowPhase+dt*44/Math.max(curveLen,1))%1;
+  const up=new THREE.Vector3(0,1,0);
+  for(let i=0;i<arrowCount;i++){ const a=arrowPool[i]; const u=(i/arrowCount+arrowPhase)%1;
+    a.position.copy(droneCurve.getPointAt(u)); a.quaternion.setFromUnitVectors(up,droneCurve.getTangentAt(u)); a.visible=true; }
+  for(let i=arrowCount;i<ARROW_MAX;i++) arrowPool[i].visible=false;
+}
+
+// ---------- speed / time model ----------
+// speed[i] = cruise speed of the segment ENDING at node i (node 0 has none).
+// The profile smooths between segment cruise speeds and eases in/out hard at
+// the ends, so playback reads like a real drone shot rather than constant pace.
+function smoothstep(x){ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); }
+function speedVel(level){ return SPEED_VELS[level]||SPEED_VELS[2]; }
+function fmtTime(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); const ss=s%60; return m+':'+String(ss).padStart(2,'0'); }
+
+function buildMotion(){
+  motion=null;
+  const a=active(); if(!a||a.nodes.length<2||!droneCurve) return;
+  const N=a.nodes.length, M=600, pts=[], cruise=[];
+  for(let j=0;j<=M;j++){ const t=j/M; pts.push(droneCurve.getPoint(t));
+    const seg=Math.min(Math.floor(t*(N-1)),N-2); cruise.push(speedVel(a.nodes[seg+1].speed)); }
+  // smooth the cruise speed so changes between legs are gradual
+  const W=Math.max(2,Math.round(M*0.05)), sm=new Array(M+1);
+  for(let j=0;j<=M;j++){ let s=0,c=0; for(let k=-W;k<=W;k++){ const i=j+k; if(i>=0&&i<=M){ s+=cruise[i]; c++; } } sm[j]=s/c; }
+  // arc-length fraction at each sample (for the ease envelope)
+  const ds=[]; let len=0; for(let j=0;j<M;j++){ const d=pts[j+1].distanceTo(pts[j]); ds.push(d); len+=d; }
+  const frac=[0]; let acc=0; for(let j=0;j<M;j++){ acc+=ds[j]; frac.push(acc/Math.max(len,1e-6)); }
+  function env(f){ if(f<EASE_FRAC) return EASE_FLOOR+(1-EASE_FLOOR)*smoothstep(f/EASE_FRAC);
+    if(f>1-EASE_FRAC) return EASE_FLOOR+(1-EASE_FLOOR)*smoothstep((1-f)/EASE_FRAC); return 1; }
+  const cum=[0]; let total=0;
+  for(let j=0;j<M;j++){ const v0=sm[j]*env(frac[j]), v1=sm[j+1]*env(frac[j+1]); const v=Math.max(0.5,(v0+v1)/2);
+    total+=ds[j]/v; cum.push(total); }
+  motion={ M, total, cum };
+}
+function motionSample(timeSec){
+  if(!motion) return 0;
+  const total=motion.total*timeScale; let t=((timeSec%total)+total)%total; const tt=t/timeScale;
+  const cum=motion.cum; let lo=0,hi=cum.length-1;
+  while(lo<hi-1){ const mid=(lo+hi)>>1; if(cum[mid]<=tt) lo=mid; else hi=mid; }
+  const f=(tt-cum[lo])/Math.max(1e-6,cum[hi]-cum[lo]); return (lo+f)/motion.M;
+}
+function targetAtParam(param){
+  const a=active(), N=a.nodes.length, x=Math.min(param*(N-1),N-1-1e-6), i=Math.floor(x), f=x-i;
+  return a.nodes[i].target.clone().lerp(a.nodes[i+1].target,f);
+}
+function speedChevrons(level){
+  let s=''; for(let i=1;i<=5;i++) s+=`<span class="cv${i<=level?' on':''}">›</span>`; return s;
+}
+function cycleSpeed(node){ node.speed = (node.speed%5)+1; }
+function rebuildCommitted(){
+  while(markerGroup.children.length){ const c=markerGroup.children[0]; markerGroup.remove(c); }
+  keyframeSectors.forEach(s=>lightScene.remove(s)); keyframeSectors.length=0;
+  while(sweptGroup.children.length) sweptGroup.remove(sweptGroup.children[0]);
+  const a=active();
+  if(a){
+    a.nodes.forEach(n=>{
+      const dm=makeDroneMarker(false,n.agl); dm.position.copy(n.dronePos); markerGroup.add(dm);
+      const cubes=makeHeightCubes(n.agl);
+      cubes.position.set(n.dronePos.x, terrainHeightAt(n.dronePos.x,n.dronePos.z), n.dronePos.z);
+      markerGroup.add(cubes);
+      const tm=makeTargetMarker(false); tm.position.set(n.target.x,n.target.y+2.5,n.target.z); markerGroup.add(tm);
+      const ks=new THREE.Mesh(sectorGeo,brightSectorMat); orientSector(ks,n.dronePos,n.target);
+      lightScene.add(ks); keyframeSectors.push(ks);
+    });
+    if(a.nodes.length>=2){
+      const curve=buildCurve(a.nodes.map(n=>n.dronePos.clone()));
+      const segs=a.nodes.length-1, STEPS=16;
+      for(let i=0;i<segs;i++) for(let s=1;s<STEPS;s++){
+        const f=s/STEPS, u=(i+f)/segs, p=curve.getPoint(u);
+        const t=a.nodes[i].target.clone().lerp(a.nodes[i+1].target,f);
+        const m=new THREE.Mesh(sectorGeo,sweptSectorMat); orientSector(m,p,t); sweptGroup.add(m);
+      }
+    }
+  }
+  overlay.visible = !!(a && (a.nodes.length>=1 || pending));
+  build3DGizmos();
+}
+function rebuildInactive(){
+  while(inactiveGroup.children.length){ const c=inactiveGroup.children[0]; inactiveGroup.remove(c);
+    if(c.geometry) c.geometry.dispose(); }
+  paths.forEach(p=>{
+    if(p.id===activeId||p.nodes.length<2) return;
+    const curve=buildCurve(p.nodes.map(n=>n.dronePos.clone()));
+    const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(240)),
+      new THREE.LineBasicMaterial({color:p.colour,transparent:true,opacity:.28}));
+    inactiveGroup.add(l);
+  });
+}
+function refreshAll(){
+  rebuildCommitted(); rebuildPath(); rebuildInactive(); renderPanel(); refreshPrompt(); buildGizmos();
+}
+
+// ============================ PANEL ============================
+const pathScroll=$('pathScroll');
+function renderPanel(){
+  pathScroll.innerHTML='';
+  if(!paths.length){
+    const e=document.createElement('div'); e.className='wp empty'; e.textContent='No flight paths yet. Press + to start.';
+    pathScroll.appendChild(e); return;
+  }
+  paths.forEach(p=>{
+    const row=document.createElement('div');
+    row.className='pathRow'+(p.id===activeId?' active':'')+(p.collapsed?' collapsed':'');
+    const head=document.createElement('div'); head.className='pathHead';
+    const caret=document.createElement('span'); caret.className='caret'; caret.textContent='▼';
+    caret.onclick=e=>{ e.stopPropagation(); p.collapsed=!p.collapsed; renderPanel(); };
+    const sw=document.createElement('span'); sw.className='swatch'; sw.style.background='#'+p.colour.toString(16).padStart(6,'0');
+    const name=document.createElement('input'); name.className='pathName'; name.value=p.name;
+    name.onpointerdown=e=>e.stopPropagation();
+    name.onchange=()=>{ p.name=name.value||p.name; refreshPrompt(); };
+    name.onkeydown=e=>{ if(e.key==='Enter') name.blur(); };
+    const meta=document.createElement('span'); meta.className='pathMeta'; meta.textContent=p.nodes.length+' wp';
+    const del=document.createElement('button'); del.className='iconBtn del'; del.textContent='🗑'; del.title='Delete flight path';
+    del.onclick=e=>{ e.stopPropagation(); requestDeletePath(p.id); };
+    head.append(caret,sw,name,meta,del);
+    head.onclick=()=>selectPath(p.id);
+    row.appendChild(head);
+
+    const list=document.createElement('div'); list.className='wpList';
+    if(!p.nodes.length){ const e=document.createElement('div'); e.className='wp empty'; e.textContent='No waypoints'; list.appendChild(e); }
+    p.nodes.forEach((n,i)=>{
+      const wp=document.createElement('div'); wp.className='wp'; wp.dataset.idx=i; wp.dataset.path=p.id;
+      const top=document.createElement('div'); top.className='wpTop';
+      const grip=document.createElement('span'); grip.className='grip'; grip.textContent='⠿';
+      const idx=document.createElement('span'); idx.className='idx'; idx.textContent=String(i+1).padStart(2,'0');
+      const co=document.createElement('span'); co.className='co';
+      co.innerHTML=`D ${n.dronePos.x.toFixed(0)}, ${(-n.dronePos.z).toFixed(0)}<br><span class="tgt">T</span> ${n.target.x.toFixed(0)}, ${(-n.target.z).toFixed(0)}`;
+      const rm=document.createElement('button'); rm.className='iconBtn del'; rm.textContent='×'; rm.title='Remove waypoint';
+      rm.onpointerdown=e=>e.stopPropagation();
+      rm.onclick=e=>{ e.stopPropagation(); requestRemoveNode(p.id,i); };
+      top.append(grip,idx,co,rm);
+
+      const ctl=document.createElement('div'); ctl.className='wpCtl';
+      const spd=document.createElement('span'); spd.className='spd';
+      spd.title='Speed of the leg arriving at this waypoint (click to change)';
+      spd.innerHTML=speedChevrons(n.speed);
+      spd.onpointerdown=e=>e.stopPropagation();
+      spd.onclick=e=>{ e.stopPropagation(); cycleSpeed(n); refreshAll(); };
+      const hgt=document.createElement('span'); hgt.className='hgt'; hgt.title='Height above ground (20 m steps)';
+      const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
+      const hv=document.createElement('span'); hv.className='hv'; hv.textContent=n.agl+' m';
+      const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
+      hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
+      hm.onclick=e=>{ e.stopPropagation(); setNodeHeight(n,n.agl-HEIGHT_STEP); renderPanel(); };
+      hp.onclick=e=>{ e.stopPropagation(); setNodeHeight(n,n.agl+HEIGHT_STEP); renderPanel(); };
+      hgt.append(hm,hv,hp);
+      ctl.append(spd,hgt);
+
+      wp.append(top,ctl);
+      if(p.id===activeId) attachReorder(wp,p,i);
+      list.appendChild(wp);
+    });
+    row.appendChild(list);
+    pathScroll.appendChild(row);
+  });
+}
+
+// pointer-based waypoint reorder within the active path
+let drag=null;
+function attachReorder(el,p,index){
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.classList.contains('iconBtn')) return;
+    drag={p, from:index, to:index, rows:[...el.parentElement.querySelectorAll('.wp:not(.empty)')]};
+    el.classList.add('dragging'); el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag) return;
+    drag.rows.forEach(r=>r.classList.remove('drop-before','drop-after'));
+    let to=drag.rows.length-1, marker=null, after=false;
+    for(let k=0;k<drag.rows.length;k++){
+      const r=drag.rows[k].getBoundingClientRect();
+      if(e.clientY < r.top+r.height/2){ to=k; marker=drag.rows[k]; after=false; break; }
+      if(k===drag.rows.length-1){ to=k; marker=drag.rows[k]; after=true; }
+    }
+    drag.to=to + (after?1:0);
+    if(marker) marker.classList.add(after?'drop-after':'drop-before');
+  });
+  const end=e=>{
+    if(!drag) return;
+    drag.rows.forEach(r=>r.classList.remove('drop-before','drop-after','dragging'));
+    let {from,to}=drag; if(to>from) to--;
+    if(to!==from && to>=0 && to<drag.p.nodes.length){
+      const [n]=drag.p.nodes.splice(from,1); drag.p.nodes.splice(to,0,n);
+    }
+    drag=null; refreshAll();
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+}
+
+// ============================ PATH / NODE OPS ============================
+function selectPath(id){
+  if(state!=='IDLE' && pending){ /* drop unfinished pending when switching */ }
+  activeId=id; pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
+  const a=active();
+  state = a && a.nodes.length ? 'IDLE' : 'PLACE_FIRST_DRONE';
+  if(a && a.nodes.length){ // frame it
+    const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length);
+    camGoal.set(c.x,0,c.z);
+  }
+  $('pipFrame').style.display = state==='IDLE' ? 'none' : 'block';
+  refreshAll();
+}
+function addPath(){
+  const p=newPath(); activeId=p.id; pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
+  state='PLACE_FIRST_DRONE'; $('pipFrame').style.display='none'; refreshAll();
+}
+function startAppend(){
+  const a=active(); if(!a){ addPath(); return; }
+  moveToolActive=false; previewing=false; setPreviewBtn();
+  if(a.nodes.length){
+    const last=a.nodes[a.nodes.length-1];
+    pending={ dronePos:last.dronePos.clone(), target:last.target.clone(), agl:DEFAULT_AGL };
+    state='PLACE_DRONE'; $('pipFrame').style.display='block';
+  } else { state='PLACE_FIRST_DRONE'; }
+  refreshAll();
+}
+function commitNode(){
+  active().nodes.push({dronePos:pending.dronePos.clone(), target:pending.target.clone(), speed:2, agl:pending.agl||DEFAULT_AGL});
+}
+function handlePlaceClick(){
+  if(!mouseValid || gizmoOn()) return;
+  if(state==='IDLE') return;                 // not in a placing mode
+  const gy=mouseGround.y;
+  if(state==='PLACE_FIRST_DRONE'){
+    pending={ dronePos:new THREE.Vector3(mouseGround.x,gy+DEFAULT_AGL,mouseGround.z), agl:DEFAULT_AGL,
+              target:new THREE.Vector3(mouseGround.x,terrainHeightAt(mouseGround.x,mouseGround.z+150),mouseGround.z+150) };
+    overlay.visible=true; $('pipFrame').style.display='block'; state='PLACE_TARGET';
+  } else if(state==='PLACE_TARGET'){
+    pending.target.set(mouseGround.x,gy,mouseGround.z); commitNode();
+    pending={ dronePos:new THREE.Vector3(mouseGround.x,gy+DEFAULT_AGL,mouseGround.z), agl:DEFAULT_AGL,
+              target:active().nodes[active().nodes.length-1].target.clone() };
+    state='PLACE_DRONE';
+  } else if(state==='PLACE_DRONE'){
+    pending.dronePos.set(mouseGround.x,gy+pending.agl,mouseGround.z); state='PLACE_TARGET';
+  }
+  refreshAll();
+}
+
+// end / exit
+function requestEndPath(){
+  if(state==='IDLE' && !moveToolActive){ return; }   // nothing active to end
+  showModal({ title:'Finish this path?',
+    body:'Your flight path saves automatically. Reopen it any time to add waypoints or make changes.',
+    buttons:[ {label:'Keep editing', kind:'ghost'},
+              {label:'Finish', kind:'primary', onClick:exitToSaved} ] });
+}
+function exitToSaved(){
+  pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
+  state='IDLE'; ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false;
+  $('pipFrame').style.display='none';
+  const a=active(); if(a && a.nodes.length<2){ /* keep, just not flyable */ }
+  refreshAll();
+}
+function requestRemoveNode(pathId,i){
+  showModal({ title:'Remove this waypoint?',
+    body:'Are you sure you want to remove this waypoint? Any others in the flight path will remain.', warn:true,
+    buttons:[ {label:'Keep waypoint', kind:'ghost'},
+              {label:'Remove waypoint', kind:'danger', onClick:()=>{
+                const p=paths.find(x=>x.id===pathId); if(p){ p.nodes.splice(i,1); } refreshAll(); }} ] });
+}
+function requestDeletePath(id){
+  const p=paths.find(x=>x.id===id); if(!p) return;
+  showModal({ title:'Delete flight path?',
+    body:`Delete "${p.name}" and all of its waypoints? This cannot be undone.`, warn:true,
+    buttons:[ {label:'Keep path', kind:'ghost'},
+              {label:'Delete path', kind:'danger', onClick:()=>{
+                const idx=paths.findIndex(x=>x.id===id); paths.splice(idx,1);
+                if(activeId===id){ activeId=paths.length?paths[Math.max(0,idx-1)].id:null;
+                  pending=null; const a=active(); state=a&&a.nodes.length?'IDLE':(a?'PLACE_FIRST_DRONE':'IDLE');
+                  $('pipFrame').style.display='none'; }
+                refreshAll(); }} ] });
+}
+
+// ============================ GIZMOS ============================
+const gizmoLayer=$('gizmoLayer');
+let gizmoEls=[];   // {el, handle, node}
+function buildGizmos(){
+  gizmoLayer.innerHTML=''; gizmoEls=[];
+  const a=active(); if(!gizmoOn()||!a||!a.nodes.length||state==='PLACE_FIRST_DRONE') return;
+  a.nodes.forEach((n,i)=>{
+    gizmoEls.push(makeGizmo('drone',i,true));
+    gizmoEls.push(makeGizmo('target',i,false));
+  });
+}
+function makeGizmo(handle,nodeIndex,withMinus){
+  const g=document.createElement('div'); g.className='gizmo';
+  const sq=document.createElement('div'); sq.className='gz-sq';
+  const ax=document.createElement('div'); ax.className='gz-x';
+  const ay=document.createElement('div'); ay.className='gz-y';
+  const lab=document.createElement('div'); lab.className='gz-lab'; lab.style.left='10px'; lab.style.top='8px';
+  lab.textContent=(handle==='drone'?'WP ':'T ')+(nodeIndex+1);
+  g.append(ay,ax,sq,lab);
+  if(withMinus){
+    const tr=document.createElement('div'); tr.className='gz-trash'; tr.textContent='🗑'; tr.title='Delete waypoint';
+    tr.onpointerdown=e=>e.stopPropagation();
+    tr.onclick=e=>{ e.stopPropagation(); requestRemoveNode(active().id,nodeIndex); };
+    g.appendChild(tr);
+    const sp=document.createElement('div'); sp.className='gz-spd'; sp.title='Speed to this waypoint (click to cycle)';
+    sp.innerHTML=speedChevrons(active().nodes[nodeIndex].speed);
+    sp.onpointerdown=e=>e.stopPropagation();
+    sp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; cycleSpeed(n);
+      sp.innerHTML=speedChevrons(n.speed); rebuildPath(); renderPanel(); };
+    g.appendChild(sp);
+    const hg=document.createElement('div'); hg.className='gz-hgt'; hg.title='Height above ground (20 m steps)';
+    const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
+    const hv=document.createElement('span'); hv.className='hv'; hv.textContent=active().nodes[nodeIndex].agl+' m';
+    const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
+    hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
+    hm.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; setNodeHeight(n,n.agl-HEIGHT_STEP); renderPanel(); };
+    hp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; setNodeHeight(n,n.agl+HEIGHT_STEP); renderPanel(); };
+    hg.append(hm,hv,hp); g.appendChild(hg);
+    g._hval=hv;
+  }
+  sq.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'xy'));
+  ax.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'x'));
+  ay.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'z'));
+  gizmoLayer.appendChild(g);
+  return {el:g, handle, node:nodeIndex, hval:g._hval||null};
+}
+function handleVec(handle,n){ return handle==='drone'?n.dronePos:n.target; }
+function syncGizmos(){
+  if(!gizmoEls.length) return;
+  const a=active(); if(!a) return;
+  const v=new THREE.Vector3();
+  gizmoEls.forEach(gz=>{
+    const n=a.nodes[gz.node]; if(!n){ gz.el.style.display='none'; return; }
+    v.copy(handleVec(gz.handle,n)).project(mapCam);
+    if(v.z>1){ gz.el.style.display='none'; return; }
+    gz.el.style.display='block';
+    gz.el.style.left=((v.x*0.5+0.5)*innerWidth)+'px';
+    gz.el.style.top=((-v.y*0.5+0.5)*innerHeight)+'px';
+    if(gz.hval) gz.hval.textContent=n.agl+' m';
+  });
+}
+let gizmoDrag=null;
+function startGizmoDrag(e,handle,nodeIndex,axis){
+  e.stopPropagation(); e.preventDefault();
+  gizmoDrag={handle,nodeIndex,axis,lastX:e.clientX,lastY:e.clientY};
+  e.target.setPointerCapture(e.pointerId);
+}
+window.addEventListener('pointermove',e=>{
+  if(!gizmoDrag) return;
+  const a=active(); if(!a) return;
+  const n=a.nodes[gizmoDrag.nodeIndex]; if(!n){ gizmoDrag=null; return; }
+  const k=pxToWorld();
+  const dx=(e.clientX-gizmoDrag.lastX)*k, dz=(e.clientY-gizmoDrag.lastY)*k;
+  gizmoDrag.lastX=e.clientX; gizmoDrag.lastY=e.clientY;
+  const h=handleVec(gizmoDrag.handle,n);
+  if(gizmoDrag.axis==='x'||gizmoDrag.axis==='xy') h.x+=dx;
+  if(gizmoDrag.axis==='z'||gizmoDrag.axis==='xy') h.z+=dz;
+  const clamp=WORLD/2-10; h.x=THREE.MathUtils.clamp(h.x,-clamp,clamp); h.z=THREE.MathUtils.clamp(h.z,-clamp,clamp);
+  // re-drape height (drone keeps its own AGL above the new ground point)
+  h.y = gizmoDrag.handle==='drone' ? terrainHeightAt(h.x,h.z)+n.agl : terrainHeightAt(h.x,h.z);
+  rebuildCommitted(); rebuildPath();   // keep gizmo DOM (count unchanged)
+});
+window.addEventListener('pointerup',()=>{ if(gizmoDrag){ gizmoDrag=null; renderPanel(); } });
+
+function setNodeHeight(n,agl){
+  n.agl=Math.max(HEIGHT_MIN, Math.min(HEIGHT_MAX, agl));
+  n.dronePos.y=terrainHeightAt(n.dronePos.x,n.dronePos.z)+n.agl;
+  rebuildCommitted(); rebuildPath();
+}
+
+// ============================ MODAL ============================
+const modalWrap=$('modalWrap'), modalCard=$('modalCard');
+let modalOpen=false;
+function showModal({title,body,buttons,warn}){
+  modalCard.className='modalCard'+(warn?' warn':'');
+  modalCard.innerHTML=`<h3></h3><p></p><div class="modalBtns"></div>`;
+  modalCard.querySelector('h3').textContent=title;
+  modalCard.querySelector('p').textContent=body;
+  const bwrap=modalCard.querySelector('.modalBtns');
+  buttons.forEach(b=>{ const btn=document.createElement('button'); btn.textContent=b.label;
+    if(b.kind&&b.kind!=='ghost') btn.className=b.kind;
+    btn.onclick=()=>{ closeModal(); if(b.onClick) b.onClick(); }; bwrap.appendChild(btn); });
+  modalWrap.classList.add('show'); modalOpen=true;
+}
+function closeModal(){ modalWrap.classList.remove('show'); modalOpen=false; }
+modalWrap.addEventListener('pointerdown',e=>{ if(e.target===modalWrap) closeModal(); });
+
+// ============================ INPUT ============================
+const raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function groundPointFromEvent(e){
+  ndc.set((e.clientX/innerWidth)*2-1, -(e.clientY/innerHeight)*2+1);
+  raycaster.setFromCamera(ndc,mapCam);
+  const hit=raycaster.intersectObject(ground,false);
+  if(hit.length){ mouseGround.copy(hit[0].point); }
+  else{ const o=raycaster.ray.origin,d=raycaster.ray.direction;
+    if(Math.abs(d.y)<1e-6) return false; const t=-o.y/d.y; if(t<=0) return false;
+    mouseGround.set(o.x+d.x*t, terrainHeightAt(o.x+d.x*t,o.z+d.z*t), o.z+d.z*t); }
+  const h=WORLD/2-10;
+  mouseGround.x=THREE.MathUtils.clamp(mouseGround.x,-h,h);
+  mouseGround.z=THREE.MathUtils.clamp(mouseGround.z,-h,h);
+  return true;
+}
+function updateAim(){
+  if(!mouseValid) return;
+  const gy=mouseGround.y;
+  $('roX').textContent=mouseGround.x.toFixed(0); $('roZ').textContent=(-mouseGround.z).toFixed(0);
+  $('roElev').textContent=gy.toFixed(0); $('roDrone').textContent=(gy+DEFAULT_AGL).toFixed(0);
+  if(state==='PLACE_TARGET'&&pending){ pending.target.set(mouseGround.x,gy,mouseGround.z); rebuildPath(); }
+  else if(state==='PLACE_DRONE'&&pending){ pending.dronePos.set(mouseGround.x,gy+(pending.agl||DEFAULT_AGL),mouseGround.z); rebuildPath(); }
+}
+function pxToWorld(){ return (2*camHeight*Math.tan(THREE.MathUtils.degToRad(mapCam.fov/2)))/innerHeight; }
+function panBy(dx,dy){ const k=pxToWorld(),h=WORLD/2-10;
+  camGoal.x=THREE.MathUtils.clamp(camGoal.x-dx*k,-h,h); camGoal.z=THREE.MathUtils.clamp(camGoal.z-dy*k,-h,h);
+  camCentre.copy(camGoal); }
+function recentreToMouse(){ if(mouseValid) camGoal.set(mouseGround.x,0,mouseGround.z); else recentreView(); }
+function recentreView(){
+  const a=active();
+  if(pending&&state!=='IDLE'){ camGoal.set(pending.dronePos.x,0,pending.dronePos.z); }
+  else if(a&&a.nodes.length){ const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length); camGoal.set(c.x,0,c.z); }
+  else camGoal.set(0,0,0);
+}
+
+let mousePanning=false, panLast={x:0,y:0};
+canvas.addEventListener('mousemove',e=>{
+  if(mousePanning){ panBy(e.clientX-panLast.x,e.clientY-panLast.y); panLast={x:e.clientX,y:e.clientY}; return; }
+  mouseValid=groundPointFromEvent(e); updateAim();
+});
+canvas.addEventListener('mousedown',e=>{
+  if(e.button===0) handlePlaceClick();
+  else if(e.button===1){ e.preventDefault(); mousePanning=true; panLast={x:e.clientX,y:e.clientY}; }
+});
+window.addEventListener('mouseup',e=>{ if(e.button===1) mousePanning=false; });
+canvas.addEventListener('contextmenu',e=>{ e.preventDefault(); if(!modalOpen) requestEndPath(); });
+canvas.addEventListener('wheel',e=>{ e.preventDefault();
+  camHeight=THREE.MathUtils.clamp(camHeight*Math.exp(e.deltaY*0.001),250,5200); },{passive:false});
+
+// touch
+let touchMode=null, multiTouched=false, tapStart=null, gMid=null, gDist=0;
+const tMid=ts=>({x:(ts[0].clientX+ts[1].clientX)/2,y:(ts[0].clientY+ts[1].clientY)/2});
+const tDist=ts=>Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);
+canvas.addEventListener('touchstart',e=>{ e.preventDefault();
+  if(e.touches.length===1&&!multiTouched){ touchMode='aim'; const t=e.touches[0];
+    tapStart={x:t.clientX,y:t.clientY,time:performance.now()}; mouseValid=groundPointFromEvent(t); updateAim(); }
+  else if(e.touches.length>=2){ touchMode='gesture'; multiTouched=true; tapStart=null; gMid=tMid(e.touches); gDist=tDist(e.touches); }
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{ e.preventDefault();
+  if(touchMode==='gesture'&&e.touches.length>=2){ const mid=tMid(e.touches),d=tDist(e.touches);
+    panBy(mid.x-gMid.x,mid.y-gMid.y); if(d>0&&gDist>0) camHeight=THREE.MathUtils.clamp(camHeight*gDist/d,250,5200);
+    gMid=mid; gDist=d; }
+  else if(touchMode==='aim'&&e.touches.length===1){ mouseValid=groundPointFromEvent(e.touches[0]); updateAim(); }
+},{passive:false});
+canvas.addEventListener('touchend',e=>{ e.preventDefault();
+  if(e.touches.length===0){
+    if(touchMode==='aim'&&!multiTouched&&tapStart&&e.changedTouches.length){
+      const t=e.changedTouches[0], moved=Math.hypot(t.clientX-tapStart.x,t.clientY-tapStart.y), held=performance.now()-tapStart.time;
+      if(moved<14&&held<450){ mouseValid=groundPointFromEvent(t); handlePlaceClick(); } }
+    touchMode=null; multiTouched=false; tapStart=null; }
+},{passive:false});
+canvas.addEventListener('touchcancel',()=>{ touchMode=null; multiTouched=false; tapStart=null; });
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ if(modalOpen) closeModal(); else requestEndPath(); }
+  if((e.key==='i'||e.key==='I')&&!e.repeat) recentreToMouse();
+  if(e.key==='Control'&&!ctrlHeld){ ctrlHeld=true; buildGizmos(); }
+});
+window.addEventListener('keyup',e=>{ if(e.key==='Control'){ ctrlHeld=false; buildGizmos(); } });
+
+// preview
+function setPreviewBtn(){ const b=$('btnPreview'); b.classList.toggle('active',previewing);
+  b.textContent=previewing?'■ Stop preview':'▶ Preview flight'; $('pipState').textContent=previewing?'flying':(state==='IDLE'?'idle':'live');
+  if(!previewing){ const pc=$('pipCtl'); if(pc) pc.style.display='none'; } }
+$('btnPreview').addEventListener('click',()=>{ const a=active(); if(!a||a.nodes.length<2) return;
+  previewing=!previewing;
+  if(previewing){ previewTime=0; $('pipFrame').style.display='block'; $('pipCtl').style.display='flex'; pipShown={dest:-1,level:-1,agl:-1}; }
+  else { $('pipCtl').style.display='none'; if(state==='IDLE') $('pipFrame').style.display='none'; }
+  setPreviewBtn(); });
+
+// build the height chip once; speed chip is rewritten on change
+$('pipHeight').innerHTML='<span class="lab">HEIGHT</span><button class="hb">−</button><span class="hv">120 m</span><button class="hb">+</button>';
+$('pipHeight').querySelectorAll('.hb')[0].onclick=()=>adjustDestHeight(-HEIGHT_STEP);
+$('pipHeight').querySelectorAll('.hb')[1].onclick=()=>adjustDestHeight(HEIGHT_STEP);
+function adjustDestHeight(d){ const a=active(); const dest=+$('pipCtl').dataset.dest; const n=a&&a.nodes[dest]; if(!n) return;
+  setNodeHeight(n,n.agl+d); pipShown={dest:-1,level:-1,agl:-1}; renderPanel(); buildGizmos(); }
+
+let pipShown={dest:-1,level:-1,agl:-1};
+function updatePipControls(dest){
+  const a=active(); if(!a||!a.nodes[dest]) return; const n=a.nodes[dest];
+  if(pipShown.dest===dest && pipShown.level===n.speed && pipShown.agl===n.agl) return;
+  pipShown={dest,level:n.speed,agl:n.agl};
+  $('pipCtl').dataset.dest=dest;
+  $('pipSpeed').innerHTML=`<span class="lab">SPEED → WP ${dest+1}</span><span class="spd">${speedChevrons(n.speed)}</span>`;
+  $('pipHeight').querySelector('.hv').textContent=n.agl+' m';
+}
+$('pipSpeed').addEventListener('click',()=>{ const a=active(); const d=+$('pipCtl').dataset.dest;
+  if(a&&a.nodes[d]){ cycleSpeed(a.nodes[d]); pipShown={dest:-1,level:-1,agl:-1}; rebuildPath(); renderPanel(); buildGizmos(); } });
+
+// maximise / restore the camera view
+$('btnPipMax').addEventListener('click',e=>{ e.stopPropagation();
+  const pf=$('pipFrame'); const max=pf.classList.toggle('max');
+  $('btnPipMax').textContent = max ? '⤡' : '⤢'; $('btnPipMax').title = max ? 'Restore view' : 'Maximise view'; });
+
+// ---------- 3D editing interaction in the preview window ----------
+const pipInput=$('pipInput');
+let pipDrag=null;
+function pipRect(){ return $('pipFrame').getBoundingClientRect(); }
+function projPip(v3,r){ const p=v3.clone().project(editCam); return {x:r.left+(p.x*0.5+0.5)*r.width, y:r.top+(-p.y*0.5+0.5)*r.height}; }
+pipInput.addEventListener('pointerdown',e=>{
+  const r=pipRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-(((e.clientY-r.top)/r.height)*2-1);
+  raycaster.setFromCamera(new THREE.Vector2(nx,ny), editCam);
+  const hit=raycaster.intersectObjects(gizmo3D.children,true).find(h=>h.object.userData&&h.object.userData.axis);
+  if(hit){ const n=hit.object.userData.node; selectedNode=n;
+    pipDrag={mode:'axis',node:n,axisKey:hit.object.userData.axis,lastX:e.clientX,lastY:e.clientY,raw:active().nodes[n].agl}; }
+  else pipDrag={mode:'orbit',lastX:e.clientX,lastY:e.clientY};
+  pipInput.setPointerCapture(e.pointerId);
+});
+
+let hoverMat=null; const hoverBase=new THREE.Color();
+function setHover(obj){
+  const mat=obj?obj.material:null;
+  if(hoverMat===mat) return;
+  if(hoverMat){ hoverMat.color.copy(hoverBase); }
+  hoverMat=mat;
+  if(mat){ hoverBase.copy(mat.color); mat.color.lerp(new THREE.Color(0xffffff),0.55); }
+}
+pipInput.addEventListener('pointermove',e=>{
+  if(pipDrag){
+    const dx=e.clientX-pipDrag.lastX, dy=e.clientY-pipDrag.lastY; pipDrag.lastX=e.clientX; pipDrag.lastY=e.clientY;
+    if(pipDrag.mode==='orbit'){ editYaw-=dx*0.006; editPitch=Math.max(0.12,Math.min(1.35,editPitch-dy*0.006)); return; }
+    const a=active(); const n=a&&a.nodes[pipDrag.node]; if(!n) return;
+    const r=pipRect(), axis=AXV[pipDrag.axisKey], o=n.dronePos.clone();
+    const p0=projPip(o,r), p1=projPip(o.clone().addScaledVector(axis,100),r);
+    const sdx=p1.x-p0.x, sdy=p1.y-p0.y, slen=Math.hypot(sdx,sdy)||1;
+    const worldDelta=((dx*sdx+dy*sdy)/slen)*(100/slen);
+    if(pipDrag.axisKey==='y'){ pipDrag.raw+=worldDelta;
+      const snapped=Math.max(HEIGHT_MIN,Math.min(HEIGHT_MAX,Math.round(pipDrag.raw/HEIGHT_STEP)*HEIGHT_STEP));
+      if(snapped!==n.agl) setNodeHeight(n,snapped); }
+    else { n.dronePos.addScaledVector(axis,worldDelta); const cl=WORLD/2-10;
+      n.dronePos.x=THREE.MathUtils.clamp(n.dronePos.x,-cl,cl); n.dronePos.z=THREE.MathUtils.clamp(n.dronePos.z,-cl,cl);
+      n.dronePos.y=terrainHeightAt(n.dronePos.x,n.dronePos.z)+n.agl; rebuildCommitted(); rebuildPath(); }
+    renderPanel(); return;
+  }
+  // rollover highlight when not dragging
+  const r=pipRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-(((e.clientY-r.top)/r.height)*2-1);
+  raycaster.setFromCamera(new THREE.Vector2(nx,ny), editCam);
+  const hit=raycaster.intersectObjects(gizmo3D.children,true).find(h=>h.object.userData&&h.object.userData.axis);
+  setHover(hit?hit.object:null);
+  pipInput.style.cursor = hit ? 'pointer' : 'grab';
+});
+pipInput.addEventListener('pointerup',()=>{ pipDrag=null; setHover(null); });
+pipInput.addEventListener('pointercancel',()=>{ pipDrag=null; setHover(null); });
+pipInput.addEventListener('pointerleave',()=>{ if(!pipDrag) setHover(null); });
+
+
+$('btnMove').addEventListener('click',()=>{ moveToolActive=!moveToolActive; $('btnMove').classList.toggle('active',moveToolActive); buildGizmos(); });
+$('btnAddWp').addEventListener('click',startAppend);
+$('btnAddPath').addEventListener('click',addPath);
+$('btnRecentre').addEventListener('click',recentreView);
+$('btnEnd').addEventListener('click',()=>{ if(!modalOpen) requestEndPath(); });
+$('btnTime').addEventListener('click',()=>{ if(!modalOpen) openTimeModal(); });
+
+function openTimeModal(){
+  if(!motion) return;
+  const base=motion.total;                          // seconds at scale 1 (from per-node speeds)
+  const minT=Math.max(5, base*0.3), maxT=base*3;
+  let val=Math.min(maxT,Math.max(minT, base*timeScale));
+  modalCard.className='modalCard';
+  modalCard.innerHTML =
+    '<h3>Adjust total flight time</h3>'+
+    '<p>Drag up for a longer, slower flight or down for a shorter, faster one. Every leg stretches evenly, so the relative speeds you set per waypoint are kept.</p>'+
+    '<div class="timeBody">'+
+      '<div class="timeLabels"><span>Longer</span><span>Shorter</span></div>'+
+      '<div class="timeTrack" id="tTrack"><div class="timeFill" id="tFill"></div><div class="timeHandle" id="tHandle"></div></div>'+
+      '<div class="timeReadout"><div class="big" id="tBig">0:00</div><div class="sub">new total time<br>currently <span id="tNow"></span></div></div>'+
+    '</div>'+
+    '<div class="modalBtns"><button id="tCancel">Cancel</button><button class="primary" id="tApply">Confirm</button></div>';
+  const track=$('tTrack'), fill=$('tFill'), handle=$('tHandle'), big=$('tBig');
+  $('tNow').textContent=fmtTime(base*timeScale);
+  function render(){ const f=(maxT-val)/(maxT-minT);
+    handle.style.top=(f*100)+'%'; fill.style.height=((1-f)*100)+'%'; big.textContent=fmtTime(val); }
+  render();
+  let dragging=false;
+  function setFromY(y){ const r=track.getBoundingClientRect(); let f=(y-r.top)/r.height; f=Math.max(0,Math.min(1,f)); val=maxT-(maxT-minT)*f; render(); }
+  track.addEventListener('pointerdown',e=>{ dragging=true; track.setPointerCapture(e.pointerId); setFromY(e.clientY); });
+  track.addEventListener('pointermove',e=>{ if(dragging) setFromY(e.clientY); });
+  track.addEventListener('pointerup',()=>{ dragging=false; });
+  $('tCancel').onclick=closeModal;
+  $('tApply').onclick=()=>{ timeScale=val/base; closeModal(); rebuildPath(); };
+  modalWrap.classList.add('show'); modalOpen=true;
+}
+
+window.addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight);
+  mapCam.aspect=innerWidth/innerHeight; mapCam.updateProjectionMatrix(); });
+renderer.setSize(innerWidth,innerHeight);
+
+const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+$('help').innerHTML = '<span><b>L-click</b> place</span><span><b>M-drag</b> pan</span><span><b>Scroll</b> to zoom</span><span><b>Ctrl</b> to see gizmos</span><span><b>I</b> to focus</span><span><b>R-click / Esc</b> end</span>';
+
+// ============================ LOOP ============================
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.05);
+  camCentre.lerp(camGoal,1-Math.pow(0.0015,dt)); placeMapCam();
+
+  const creating = state==='PLACE_TARGET'||state==='PLACE_DRONE';
+  if(pending && creating){
+    ghostDrone.position.copy(pending.dronePos);
+    ghostTarget.position.set(pending.target.x,pending.target.y+2.5,pending.target.z);
+    ghostDrone.visible=ghostTarget.visible=true;
+    activeSector.visible=true; orientSector(activeSector,pending.dronePos,pending.target);
+    sightLine.visible=true;
+    sightGeo.setFromPoints([pending.dronePos,new THREE.Vector3(pending.target.x,pending.target.y+2,pending.target.z)]);
+    sightLine.computeLineDistances();
+    pipCam.position.copy(pending.dronePos); pipCam.lookAt(pending.target.x,pending.target.y,pending.target.z);
+  } else { ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false; }
+
+  if(previewing && motion){
+    const total=motion.total*timeScale;
+    previewTime=(previewTime+dt)%total;
+    const param=motionSample(previewTime);
+    pipCam.position.copy(droneCurve.getPoint(param));
+    const tg=targetAtParam(param); pipCam.lookAt(tg.x,tg.y,tg.z);
+    const a=active(), N=a.nodes.length;
+    updatePipControls(Math.min(N-1, Math.floor(param*(N-1))+1));
+  }
+
+  updateArrows(dt);
+  if(gizmoOn()) syncGizmos();
+
+  // Decide what the preview window shows: flight, the live placement POV, or the 3D edit view.
+  // Gizmos + tumble appear whenever Ctrl is held OR Move nodes is on (same as the top-down gizmos).
+  const a=active();
+  const editing = gizmoOn() && !previewing && a && a.nodes.length>0;
+  let pipCamUse=pipCam;
+  gizmo3D.visible = editing;
+  pipInput.style.pointerEvents = editing ? 'auto' : 'none';
+  if(editing){
+    selectedNode=Math.min(selectedNode, a.nodes.length-1);
+    frameEditCam(); pipCamUse=editCam;
+    updatePipControls(selectedNode);
+  }
+  const showPip = previewing || editing || (pending && creating);
+  const pf=$('pipFrame');
+  pf.style.display = showPip ? 'block' : 'none';
+  $('pipCtl').style.display = (previewing || editing) ? 'flex' : 'none';
+  $('pipState').textContent = previewing ? 'flying' : (editing ? 'edit' : 'live');
+
+  renderer.setRenderTarget(lightRT); renderer.setClearColor(0x000000,1); renderer.clear();
+  renderer.render(lightScene,lightCam); renderer.setRenderTarget(null);
+
+  renderer.setClearColor(HORIZON,1); renderer.setViewport(0,0,innerWidth,innerHeight);
+  renderer.setScissorTest(false); renderer.render(scene,mapCam);
+
+  if(pf.style.display==='block'){
+    const r=pf.getBoundingClientRect();
+    const vx=r.left, vy=innerHeight-r.bottom, vw=r.width, vh=r.height;   // GL origin is bottom-left
+    pipCamUse.aspect=vw/vh; pipCamUse.updateProjectionMatrix();
+    renderer.setScissorTest(true); renderer.setViewport(vx,vy,vw,vh); renderer.setScissor(vx,vy,vw,vh);
+    renderer.render(scene,pipCamUse); renderer.setScissorTest(false);
+  }
+}
+
+// ---------- button states ----------
+function updateButtons(){
+  const a=active();
+  const creating = state==='PLACE_FIRST_DRONE'||state==='PLACE_TARGET'||state==='PLACE_DRONE';
+  $('btnPreview').disabled = !(a && a.nodes.length>=2);
+  $('btnTime').disabled    = !(a && a.nodes.length>=2);
+  $('btnMove').disabled    = !(a && a.nodes.length>=1);
+  $('btnAddWp').disabled   = !a;
+  $('btnEnd').disabled     = !(creating || moveToolActive);
+  if($('btnMove').disabled && moveToolActive){ moveToolActive=false; $('btnMove').classList.remove('active'); buildGizmos(); }
+}
+
+// ---------- reset ----------
+function resetAll(){
+  paths.length=0; pathSeq=0; activeId=null; pending=null;
+  moveToolActive=false; ctrlHeld=false; previewing=false;
+  $('btnMove').classList.remove('active'); setPreviewBtn();
+  state='IDLE';
+  ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false;
+  $('pipFrame').style.display='none';
+  camGoal.set(0,0,0);
+  addPath();            // start fresh with one empty path
+  showInstructions();
+}
+
+// ---------- instructions modal ----------
+function showInstructions(){
+  const steps = [
+    'Add a flight path with + (top right), or pick one from the list.',
+    'Left-click the map to place the drone start. It sits 120 m above the ground at that point.',
+    'Move the mouse to aim the camera, then click to set its target. The lit cone is the camera view.',
+    'Keep clicking to add waypoints. Reorder them by dragging in the list.',
+    'Hold Ctrl (or Move nodes) to see the XY gizmos and drag waypoints and targets. The minus removes a waypoint.',
+    'Scroll to zoom, middle-drag to pan, press I to focus on the cursor.',
+    'Right-click or Esc to end and save. Preview flight to fly the camera along it.'
+  ];
+  const keys = '<b>L-click</b> place · <b>M-drag</b> pan · <b>Scroll</b> zoom · <b>Ctrl</b> gizmos · <b>I</b> focus · <b>R-click / Esc</b> end';
+  modalCard.className='modalCard info';
+  modalCard.innerHTML =
+    '<h3>Flight path authoring</h3>' +
+    '<div class="instr">' +
+    steps.map((s,i)=>`<div class="ln"><span class="n">${i+1}</span><span>${s}</span></div>`).join('') +
+    `<div class="ln" style="border-top:none;"><span class="n" style="background:rgba(255,255,255,.08);border-color:var(--panel-line);color:var(--dim);">⌨</span><span class="keys">${keys}</span></div>` +
+    '</div>' +
+    '<div class="modalBtns"><button class="primary">Start authoring</button></div>';
+  modalCard.querySelector('button').onclick=closeModal;
+  modalWrap.classList.add('show'); modalOpen=true;
+}
+
+$('btnReset').addEventListener('click',resetAll);
+
+// ---------- boot ----------
+addPath();          // start with one empty flight path ready to draw
+showInstructions();
+animate();
+</script>
+</body>
+</html>
