@@ -1105,14 +1105,17 @@ function handleVec(handle,n){ return handle==='drone'?n.dronePos:n.target; }
 function syncGizmos(){
   if(!gizmoEls.length) return;
   const a=active(); if(!a) return;
+  const pf=$('pipFrame'); const pr = pf.style.display==='block' ? pf.getBoundingClientRect() : null;
   const v=new THREE.Vector3();
   gizmoEls.forEach(gz=>{
     const n=a.nodes[gz.node]; if(!n){ gz.el.style.display='none'; return; }
     v.copy(handleVec(gz.handle,n)).project(mapCam);
     if(v.z>1){ gz.el.style.display='none'; return; }
+    const sx=(v.x*0.5+0.5)*innerWidth, sy=(-v.y*0.5+0.5)*innerHeight;
+    // don't draw top-down gizmos over the preview window (the 3D view owns them there)
+    if(pr && sx>pr.left-45 && sx<pr.right+45 && sy>pr.top-45 && sy<pr.bottom+45){ gz.el.style.display='none'; return; }
     gz.el.style.display='block';
-    gz.el.style.left=((v.x*0.5+0.5)*innerWidth)+'px';
-    gz.el.style.top=((-v.y*0.5+0.5)*innerHeight)+'px';
+    gz.el.style.left=sx+'px'; gz.el.style.top=sy+'px';
     if(gz.hval) gz.hval.textContent=n.agl+' m';
   });
 }
@@ -1164,6 +1167,7 @@ modalWrap.addEventListener('pointerdown',e=>{ if(e.target===modalWrap) closeModa
 
 // ============================ INPUT ============================
 const raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2();
+raycaster.layers.enable(2);   // also test the 3D gizmo arrows (layer 2)
 function groundPointFromEvent(e){
   ndc.set((e.clientX/innerWidth)*2-1, -(e.clientY/innerHeight)*2+1);
   raycaster.setFromCamera(ndc,mapCam);
