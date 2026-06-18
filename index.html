@@ -271,6 +271,11 @@
     border:1px solid var(--vp-red);color:#ff7d97;background:transparent;opacity:.5;}
   .lookPill.fixed{background:rgba(255,0,55,.14);opacity:1;}
   .lookPill:hover{opacity:1;}
+  .camBadge{display:inline-flex;align-items:center;font-family:'Roboto Mono',monospace;font-size:9px;
+    letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:9px;white-space:nowrap;
+    border:1px solid var(--panel-line);}
+  .camBadge.targeted{color:#ff7d97;border-color:var(--vp-red);background:rgba(255,0,55,.10);}
+  .camBadge.fixed{color:var(--path-blue);border-color:var(--path-blue);background:rgba(61,169,255,.12);}
   .hgt{display:inline-flex;align-items:center;gap:4px;}
   .hgt .hb{pointer-events:auto;cursor:pointer;width:17px;height:17px;border-radius:3px;border:1px solid var(--panel-line);
     background:transparent;color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;}
@@ -757,6 +762,13 @@ const lookatGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),ne
 const lookatLine=new THREE.Line(lookatGeo,new THREE.LineBasicMaterial({color:0xff0037}));
 lookatLine.renderOrder=11; lookatLine.visible=false; lookatLine.layers.set(1); scene.add(lookatLine);
 
+// suggestion ring (Targeted paths): a ground ring around the selected camera at the
+// ideal look-at distance, hinting the horizon spot to drop the target (A3).
+const suggestRing=new THREE.Mesh(new THREE.RingGeometry(FORWARD_DIST-7, FORWARD_DIST+7, 72),
+  new THREE.MeshBasicMaterial({color:0xff5b7c,side:THREE.DoubleSide,transparent:true,opacity:.26}));
+suggestRing.rotation.x=-Math.PI/2; suggestRing.renderOrder=9; suggestRing.visible=false;
+suggestRing.layers.set(1); scene.add(suggestRing);
+
 // moving camera marker shown on the path while previewing / scrubbing (map view only):
 // a wireframe frustum (apex = camera position, opening toward the look-at) plus a ring.
 const camMarker=new THREE.Group(); camMarker.visible=false; camMarker.layers.set(1); scene.add(camMarker);
@@ -808,9 +820,13 @@ const paths=[];
 let activeId=null;
 const active=()=>paths.find(p=>p.id===activeId)||null;
 
-function newPath(){
+// cameraType is chosen at creation and fixed for the path's life (no mixing):
+//  'targeted' = place then look-at, camera aims at a target (forward by default)
+//  'fixed'    = camera holds a downward nadir framing, no per-waypoint target
+function newPath(type){
   const colour=PALETTE[pathSeq%PALETTE.length];
-  const p={id:'p'+(++pathSeq), name:'Flight path '+pathSeq, colour, nodes:[], collapsed:false};
+  const p={id:'p'+(++pathSeq), name:'Flight path '+pathSeq, colour, nodes:[], collapsed:false,
+    cameraType: type==='fixed' ? 'fixed' : 'targeted'};
   paths.push(p); return p;
 }
 
@@ -857,8 +873,12 @@ function refreshPrompt(){
   }
   if(selectedNode>=0 && a.nodes[selectedNode]){
     const n=a.nodes[selectedNode];
-    const look = n.target ? 'fixed target' : 'forward along path';
-    setPrompt(`<b>Waypoint ${selectedNode+1} · ${n.agl} m · speed ${n.speed} · ${look}.</b><span class="sub">Drag to move · right-click the map to aim its look-at · click empty map to add another</span>`,'target-mode');
+    if(a.cameraType==='fixed'){
+      setPrompt(`<b>Waypoint ${selectedNode+1} · ${n.agl} m · speed ${n.speed} · nadir.</b><span class="sub">Fixed camera looks straight down · drag to move · click empty map to add another</span>`,'target-mode');
+    } else {
+      const look = n.target ? 'fixed target' : 'looking forward';
+      setPrompt(`<b>Waypoint ${selectedNode+1} · ${n.agl} m · speed ${n.speed} · ${look}.</b><span class="sub">Drag to move · right-click the map to aim its look-at · click empty map to add another</span>`,'target-mode');
+    }
     return;
   }
   if(a.nodes.length>=2){
@@ -899,7 +919,7 @@ function rebuildPath(){
     arrowCount=Math.min(48,Math.max(3,Math.round(curveLen/90)));   // chevron glyphs along the path
     for(let i=0;i<arrowCount;i++) glyphU[i]=i/arrowCount;          // re-seed even spacing
   }
-  if(a && N>=2){
+  if(a && a.cameraType!=='fixed' && N>=2){   // Fixed frames nadir, so no look-at line to draw
     const tps=a.nodes.map((n,i)=>{ const t=resolvedTarget(i); return t.clone().setY(t.y+2); });
     targetLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(tps),
       new THREE.LineDashedMaterial({color:0xff5b7c,transparent:true,opacity:.5,dashSize:8,gapSize:7}));
@@ -980,6 +1000,8 @@ function motionSample(timeSec){
 function resolvedTarget(i){
   const a=active(); if(!a||!a.nodes[i]) return new THREE.Vector3();
   const n=a.nodes[i];
+  if(a.cameraType==='fixed')   // Fixed paths frame nadir: look straight down at the ground below
+    return new THREE.Vector3(n.dronePos.x, terrainHeightAt(n.dronePos.x,n.dronePos.z), n.dronePos.z);
   if(n.target) return n.target;
   const N=a.nodes.length;
   if(droneCurve && N>=2){
@@ -1094,7 +1116,7 @@ function applyEditFor(pathId,i,prop,value){
 const undoStack=[], redoStack=[], HISTORY_MAX=120;
 function snapshot(){
   return JSON.stringify({ activeId, timeScale, pathSeq,
-    paths: paths.map(p=>({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
+    paths: paths.map(p=>({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed, cameraType:p.cameraType,
       nodes: p.nodes.map(n=>({ d:[n.dronePos.x,n.dronePos.y,n.dronePos.z],
         t: n.target?[n.target.x,n.target.y,n.target.z]:null, tagl:n.targetAgl||0, speed:n.speed, agl:n.agl })) })) });
 }
@@ -1102,7 +1124,7 @@ function restoreState(str){
   const s=JSON.parse(str);
   activeId=s.activeId; timeScale=s.timeScale; pathSeq=s.pathSeq;
   paths.length=0;
-  s.paths.forEach(p=>paths.push({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
+  s.paths.forEach(p=>paths.push({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed, cameraType:p.cameraType||'targeted',
     nodes: p.nodes.map(n=>({ dronePos:new THREE.Vector3(n.d[0],n.d[1],n.d[2]),
       target: n.t?new THREE.Vector3(n.t[0],n.t[1],n.t[2]):null, targetAgl:n.tagl||0, speed:n.speed, agl:n.agl })) }));
   clearSelection(); previewing=false; scrubbing=false; setPreviewBtn();
@@ -1133,10 +1155,13 @@ function renderPanel(){
     name.onpointerdown=e=>e.stopPropagation();
     name.onchange=()=>{ if(name.value && name.value!==p.name){ pushHistory(); p.name=name.value; } refreshPrompt(); };
     name.onkeydown=e=>{ if(e.key==='Enter') name.blur(); };
+    const cam=document.createElement('span'); cam.className='camBadge '+(p.cameraType==='fixed'?'fixed':'targeted');
+    cam.textContent = p.cameraType==='fixed' ? 'Fixed' : 'Targeted';
+    cam.title='Camera type, chosen at creation for the whole path';
     const meta=document.createElement('span'); meta.className='pathMeta'; meta.textContent=p.nodes.length+' wp';
     const del=document.createElement('button'); del.className='iconBtn del'; del.textContent='🗑'; del.title='Delete flight path';
     del.onclick=e=>{ e.stopPropagation(); requestDeletePath(p.id); };
-    head.append(caret,sw,name,meta,del);
+    head.append(caret,sw,name,cam,meta,del);
     head.onclick=()=>selectPath(p.id);
     row.appendChild(head);
 
@@ -1168,13 +1193,7 @@ function renderPanel(){
       hp.onclick=e=>{ e.stopPropagation(); applyEditFor(p.id,i,'agl',n.agl+HEIGHT_STEP); };
       hgt.append(hm,hv,hp);
       attachHeightScrub(hv, p.id, i, 'panel');
-      const look=document.createElement('span'); look.className='lookPill'+(n.target?' fixed':'');
-      look.textContent = n.target ? 'Looking at point' : 'Looking forward';
-      look.title='Toggle look-at: forward along path ↔ fixed point';
-      look.onpointerdown=e=>e.stopPropagation();
-      look.onclick=e=>{ e.stopPropagation(); if(p.id!==activeId) selectPath(p.id);
-        const nn=p.nodes[i]; applyEdit('lookat', nn.target?'forward':'explicit', i); };
-      ctl.append(spd,hgt,look);
+      ctl.append(spd,hgt);   // look-at is governed by the path's camera type, not per waypoint
 
       wp.append(top,ctl);
       if(p.id===activeId) attachReorder(wp,p,i);
@@ -1233,9 +1252,19 @@ function selectPath(id){
   }
   refreshAll();
 }
-function addPath(){
-  const p=newPath(); activeId=p.id; previewing=false; setPreviewBtn();
+function addPath(type){
+  const p=newPath(type); activeId=p.id; previewing=false; setPreviewBtn();
   clearSelection(); refreshAll();
+  return p;
+}
+// Creation-time camera-type chooser. Targeted aims at a target (forward by
+// default); Fixed holds a downward nadir framing with no targets.
+function addPathWithChooser(){
+  showModal({ title:'Camera type for this flight path',
+    body:'Targeted aims the camera at a look-at target (it starts looking forward along the path). Fixed holds a downward, straight-down framing the whole way with no target. You cannot mix the two within one path.',
+    buttons:[
+      {label:'Targeted', kind:'primary', onClick:()=>{ pushHistory(); addPath('targeted'); }},
+      {label:'Fixed (nadir)', onClick:()=>{ pushHistory(); addPath('fixed'); }} ] });
 }
 // Place a new waypoint at the cursor. It inherits the previous waypoint's speed,
 // height and look-at so the run continues until you deliberately change it; the
@@ -1353,13 +1382,8 @@ function makeGizmo(handle,nodeIndex,full,selected){
       hg.append(hm,hv,hp); g.appendChild(hg);
       g._hval=hv;
       attachHeightScrub(hv, active().id, nodeIndex, 'gizmo');
-      const nn=active().nodes[nodeIndex];
-      const lk=document.createElement('div'); lk.className='gz-look'+(nn.target?' on':'');
-      lk.textContent = '◎';
-      lk.title = nn.target ? 'Look-at: fixed target (click for forward)' : 'Look-at: forward along path (click to set a fixed target)';
-      lk.onpointerdown=e=>e.stopPropagation();
-      lk.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('lookat', n.target?'forward':'explicit', nodeIndex); };
-      g.appendChild(lk);
+      // Look-at is governed by the path's camera type (no per-waypoint toggle).
+      // On a Targeted path, right-press-drag the map to aim this waypoint's look-at.
     } else if(handle==='target'){
       // target height stepper: lift the look-at off the ground (20 m steps)
       const tn=active().nodes[nodeIndex];
@@ -1521,6 +1545,7 @@ function startPlacement(e){
 function startLookatDrag(e){
   if(modalOpen) return;
   const a=active();
+  if(a && a.cameraType==='fixed') return;   // Fixed paths frame nadir; no aimable target
   if(!a || selectedNode<0){ clearSelection(); refreshAll(); return; }   // nothing selected -> deselect
   pushHistory();
   const targets = selection.size ? [...selection] : [selectedNode];
@@ -1734,7 +1759,7 @@ window.addEventListener('keydown',e=>{ if(e.key==='Control'||e.key==='Meta') ctr
 window.addEventListener('keyup',  e=>{ if(e.key==='Control'||e.key==='Meta') ctrlDown=false; });
 window.addEventListener('blur',   ()=>{ ctrlDown=false; });
 
-$('btnAddPath').addEventListener('click',()=>{ pushHistory(); addPath(); });
+$('btnAddPath').addEventListener('click',()=>{ if(!modalOpen) addPathWithChooser(); });
 $('btnRecentre').addEventListener('click',recentreView);
 $('btnAddWp').addEventListener('click',addWaypointAtCentre);
 $('btnWizard').addEventListener('click',()=>{ if(!modalOpen) showInstructions(); });
@@ -1943,7 +1968,12 @@ function animate(){
     lookatGeo.setFromPoints([n.dronePos.clone(), new THREE.Vector3(t.x,t.y+2,t.z)]);
     lookatGeo.attributes.position.needsUpdate=true;
     lookatLine.visible=true;
-  } else lookatLine.visible=false;
+    // suggestion ring only on Targeted paths (Fixed frames nadir, no target to drop)
+    if(a.cameraType==='targeted'){
+      suggestRing.position.set(n.dronePos.x, terrainHeightAt(n.dronePos.x,n.dronePos.z)+2, n.dronePos.z);
+      suggestRing.visible=true;
+    } else suggestRing.visible=false;
+  } else { lookatLine.visible=false; suggestRing.visible=false; }
 
   const pf=$('pipFrame');
   pf.style.display = showPip ? 'block' : 'none';
@@ -1990,13 +2020,13 @@ function resetAll(){
 // ---------- instructions modal ----------
 function showInstructions(){
   const steps = [
-    'Add a flight path with + (top right), or pick one from the list.',
-    'Click empty ground to drop a waypoint. It sits 120 m up and, by default, the camera looks forward along the path.',
-    'Click a waypoint to select it. Its gizmo shows speed, height, a look-at toggle and a delete button; drag the square to move it.',
-    'Use the look-at toggle to switch between “forward along path” and a fixed target you can drag — or just right-click the map to aim the selected waypoint at that spot.',
+    'Add a flight path with + (top right), then choose its camera type. Targeted aims at a look-at target; Fixed holds a straight-down nadir framing.',
+    'Click empty ground to drop a waypoint. It sits 120 m up. On a Targeted path the camera starts looking forward along the path.',
+    'Click a waypoint to select it. Its gizmo shows speed, height and a delete button; drag the square to move it.',
+    'On a Targeted path, right-click the map to aim the selected waypoint at that spot, then lift the target with its height stepper if you want. Fixed paths always look straight down.',
     'Editing one waypoint changes only that waypoint. Shift-click or shift-drag a box to select several and edit them together.',
-    'The path is coloured by speed (purple slow → orange fast); the chevrons show the same. Reorder waypoints by dragging them in the list.',
-    'Scrub the timeline at the bottom to fly the camera; click its total time to retime the whole flight. Press I to focus, Esc to deselect.'
+    'The path is coloured by speed (purple slow to orange fast); the chevrons show the same. Reorder waypoints by dragging them in the list.',
+    'Scrub the timeline at the bottom to fly the camera; drag its end marker or click the total time to retime the whole flight. Press I to focus, Esc to deselect.'
   ];
   const keys = '<b>Click</b> add/select · <b>Shift-click</b> multi · <b>Shift-drag</b> box · <b>M-drag</b> pan · <b>Scroll</b> zoom · <b>I</b> focus · <b>Esc</b> deselect';
   modalCard.className='modalCard info';
