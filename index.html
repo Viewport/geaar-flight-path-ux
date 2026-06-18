@@ -123,6 +123,10 @@
   #actions{right:16px;bottom:80px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
   #actions .btn{width:214px;justify-content:flex-start;}
   #actions .btn kbd{margin-left:auto;}
+  #actions .actHdr{width:214px;text-align:center;font-family:'Antonio',sans-serif;
+    font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--vp-red);
+    text-transform:uppercase;line-height:1.25;padding:6px 8px;border:1px dashed var(--vp-red);
+    border-radius:5px;background:rgba(229,57,53,.08);margin-bottom:2px;}
   .btn{pointer-events:auto;background:var(--panel);border:1px solid var(--panel-line);
     color:var(--ink);font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
     padding:9px 16px;border-radius:4px;cursor:pointer;display:flex;gap:8px;align-items:center;
@@ -384,9 +388,11 @@
 </div>
 
 <div class="hud" id="actions">
+  <div class="actHdr">Easy access placeholder buttons for testing</div>
   <button class="btn preview clickable" id="btnPreview" disabled>▶ Preview flight</button>
-  <button class="btn clickable" id="btnTime" disabled>◷ Total time</button>
+  <button class="btn clickable" id="btnAddWp">＋ Add waypoints</button>
   <button class="btn clickable" id="btnRecentre">⌖ Recentre <kbd>I</kbd></button>
+  <button class="btn clickable" id="btnWizard">🎩 Walkthrough</button>
   <button class="btn danger clickable" id="btnReset">Reset all</button>
 </div>
 
@@ -1707,7 +1713,24 @@ window.addEventListener('blur',   ()=>{ ctrlDown=false; });
 
 $('btnAddPath').addEventListener('click',()=>{ pushHistory(); addPath(); });
 $('btnRecentre').addEventListener('click',recentreView);
-$('btnTime').addEventListener('click',()=>{ if(!modalOpen) openTimeModal(); });
+$('btnAddWp').addEventListener('click',addWaypointAtCentre);
+$('btnWizard').addEventListener('click',()=>{ if(!modalOpen) showInstructions(); });
+
+// Add a waypoint without clicking the map: drops one a short step from the last
+// (or at the view centre for the first), so testers can build a path quickly.
+function addWaypointAtCentre(){
+  let a=active(); if(!a){ addPath(); a=active(); }
+  const prev=a.nodes[a.nodes.length-1];
+  const x = prev ? prev.dronePos.x+160 : camCentre.x;
+  const z = prev ? prev.dronePos.z+160 : camCentre.z;
+  const agl  = prev ? prev.agl  : DEFAULT_AGL;
+  const speed= prev ? prev.speed: 2;
+  const target = prev && prev.target ? prev.target.clone() : null;
+  pushHistory();
+  a.nodes.push({ dronePos:new THREE.Vector3(x,terrainHeightAt(x,z)+agl,z), target, speed, agl });
+  selectNode(a.nodes.length-1,false);
+  camGoal.set(x,0,z); refreshAll();
+}
 
 function openTimeModal(){
   if(!motion) return;
@@ -1928,7 +1951,6 @@ function animate(){
 function updateButtons(){
   const a=active();
   $('btnPreview').disabled = !(a && a.nodes.length>=2);
-  $('btnTime').disabled    = !(a && a.nodes.length>=2);
 }
 
 // ---------- reset ----------
