@@ -1013,7 +1013,9 @@ function rebuildCommitted(){
       cubes.position.set(n.dronePos.x, terrainHeightAt(n.dronePos.x,n.dronePos.z), n.dronePos.z);
       markerGroup.add(cubes);
       const t=resolvedTarget(i);
-      if(n.target){ const tm=makeTargetMarker(false); tm.position.set(t.x,t.y+2.5,t.z); markerGroup.add(tm); }
+      if(n.target){ const tm=makeTargetMarker(false); tm.position.set(t.x,t.y+2.5,t.z); markerGroup.add(tm);
+        if(n.targetAgl>0){ const tc=makeHeightCubes(n.targetAgl);   // visualise the lift like a waypoint
+          tc.position.set(t.x, terrainHeightAt(t.x,t.z), t.z); markerGroup.add(tc); } }
       const ks=new THREE.Mesh(sectorGeo,brightSectorMat); orientSector(ks,n.dronePos,t);
       lightScene.add(ks); keyframeSectors.push(ks);
     });
@@ -1060,7 +1062,14 @@ function writeProp(node,prop,value,idx){
   if(prop==='speed'){ node.speed=value; }
   else if(prop==='agl'){ node.agl=Math.max(HEIGHT_MIN,Math.min(HEIGHT_MAX,value));
     node.dronePos.y=terrainHeightAt(node.dronePos.x,node.dronePos.z)+node.agl; }
-  else if(prop==='lookat'){ node.target = value==='forward' ? null : resolvedTarget(idx).clone(); }
+  else if(prop==='lookat'){
+    if(value==='forward'){ node.target=null; }
+    else { node.target=resolvedTarget(idx).clone(); node.targetAgl=0; }   // new targets seat on the ground
+  }
+  else if(prop==='tagl'){   // target height above ground, so the look-at can be lifted off the ground
+    if(node.target){ node.targetAgl=Math.max(0,Math.min(HEIGHT_MAX,value));
+      node.target.y=terrainHeightAt(node.target.x,node.target.z)+node.targetAgl; }
+  }
 }
 function applyEdit(prop,value,baseIdx){
   const a=active(); if(!a) return;
@@ -1087,7 +1096,7 @@ function snapshot(){
   return JSON.stringify({ activeId, timeScale, pathSeq,
     paths: paths.map(p=>({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
       nodes: p.nodes.map(n=>({ d:[n.dronePos.x,n.dronePos.y,n.dronePos.z],
-        t: n.target?[n.target.x,n.target.y,n.target.z]:null, speed:n.speed, agl:n.agl })) })) });
+        t: n.target?[n.target.x,n.target.y,n.target.z]:null, tagl:n.targetAgl||0, speed:n.speed, agl:n.agl })) })) });
 }
 function restoreState(str){
   const s=JSON.parse(str);
@@ -1095,7 +1104,7 @@ function restoreState(str){
   paths.length=0;
   s.paths.forEach(p=>paths.push({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
     nodes: p.nodes.map(n=>({ dronePos:new THREE.Vector3(n.d[0],n.d[1],n.d[2]),
-      target: n.t?new THREE.Vector3(n.t[0],n.t[1],n.t[2]):null, speed:n.speed, agl:n.agl })) }));
+      target: n.t?new THREE.Vector3(n.t[0],n.t[1],n.t[2]):null, targetAgl:n.tagl||0, speed:n.speed, agl:n.agl })) }));
   clearSelection(); previewing=false; scrubbing=false; setPreviewBtn();
   refreshAll();
 }
@@ -1239,7 +1248,8 @@ function appendNode(){
   const agl  = prev ? prev.agl  : DEFAULT_AGL;
   const speed= prev ? prev.speed: 2;
   const target = prev && prev.target ? prev.target.clone() : null;
-  a.nodes.push({ dronePos:new THREE.Vector3(mouseGround.x,gy+agl,mouseGround.z), target, speed, agl });
+  const targetAgl = prev ? (prev.targetAgl||0) : 0;
+  a.nodes.push({ dronePos:new THREE.Vector3(mouseGround.x,gy+agl,mouseGround.z), target, targetAgl, speed, agl });
   selectNode(a.nodes.length-1,false);
   refreshAll();
 }
@@ -1309,7 +1319,7 @@ function buildGizmos(){
     const isSel = i===selectedNode || selection.has(i);
     const full  = i===selectedNode;
     gizmoEls.push(makeGizmo('drone',i,full,isSel));
-    if(full && n.target) gizmoEls.push(makeGizmo('target',i,false,true));
+    if(full && n.target) gizmoEls.push(makeGizmo('target',i,true,true));
   });
 }
 function makeGizmo(handle,nodeIndex,full,selected){
@@ -1350,6 +1360,18 @@ function makeGizmo(handle,nodeIndex,full,selected){
       lk.onpointerdown=e=>e.stopPropagation();
       lk.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('lookat', n.target?'forward':'explicit', nodeIndex); };
       g.appendChild(lk);
+    } else if(handle==='target'){
+      // target height stepper: lift the look-at off the ground (20 m steps)
+      const tn=active().nodes[nodeIndex];
+      const hg=document.createElement('div'); hg.className='gz-hgt'; hg.title='Target height above ground (20 m steps)';
+      const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
+      const hv=document.createElement('span'); hv.className='hv'; hv.textContent=(tn.targetAgl||0)+' m';
+      const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
+      hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
+      hm.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('tagl',(n.targetAgl||0)-HEIGHT_STEP,nodeIndex); };
+      hp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('tagl',(n.targetAgl||0)+HEIGHT_STEP,nodeIndex); };
+      hg.append(hm,hv,hp); g.appendChild(hg);
+      g._hval=hv;
     }
   }
   sq.addEventListener('pointerdown',e=>{
@@ -1378,7 +1400,7 @@ function syncGizmos(){
     if(pr && sx>pr.left-45 && sx<pr.right+45 && sy>pr.top-45 && sy<pr.bottom+45){ gz.el.style.display='none'; return; }
     gz.el.style.display='block';
     gz.el.style.left=sx+'px'; gz.el.style.top=sy+'px';
-    if(gz.hval) gz.hval.textContent=n.agl+' m';
+    if(gz.hval) gz.hval.textContent=(gz.handle==='target'?(n.targetAgl||0):n.agl)+' m';
   });
 }
 let gizmoDrag=null;
@@ -1399,8 +1421,8 @@ window.addEventListener('pointermove',e=>{
   if(gizmoDrag.axis==='x'||gizmoDrag.axis==='xy') h.x+=dx;
   if(gizmoDrag.axis==='z'||gizmoDrag.axis==='xy') h.z+=dz;
   const clamp=WORLD/2-10; h.x=THREE.MathUtils.clamp(h.x,-clamp,clamp); h.z=THREE.MathUtils.clamp(h.z,-clamp,clamp);
-  // re-drape height (drone keeps its own AGL above the new ground point)
-  h.y = gizmoDrag.handle==='drone' ? terrainHeightAt(h.x,h.z)+n.agl : terrainHeightAt(h.x,h.z);
+  // re-drape height: drone keeps its AGL, target keeps any lift above the new ground point
+  h.y = gizmoDrag.handle==='drone' ? terrainHeightAt(h.x,h.z)+n.agl : terrainHeightAt(h.x,h.z)+(n.targetAgl||0);
   // dragging a look-at handle snaps onto a nearby existing look-at point (same as right-drag)
   if(gizmoDrag.handle==='target'){
     const snap=snapToExistingTarget(new Set([gizmoDrag.nodeIndex]), e.clientX, e.clientY);
@@ -1506,7 +1528,8 @@ function startLookatDrag(e){
   const apply=ev=>{ mouseValid=groundPointFromEvent(ev);
     const snap = snapToExistingTarget(exclude, ev.clientX, ev.clientY);
     const t = snap || new THREE.Vector3(mouseGround.x,mouseGround.y,mouseGround.z);
-    targets.forEach(idx=>{ const n=a.nodes[idx]; if(n) n.target=t.clone(); });
+    targets.forEach(idx=>{ const n=a.nodes[idx]; if(n){ n.target=t.clone();
+      n.targetAgl=Math.max(0, t.y-terrainHeightAt(t.x,t.z)); } });   // keep any lift from a snapped target
     rebuildPath(); rebuildCommitted(); refreshPrompt(); };
   apply(e);
   const mv=ev=>apply(ev);
@@ -1726,8 +1749,9 @@ function addWaypointAtCentre(){
   const agl  = prev ? prev.agl  : DEFAULT_AGL;
   const speed= prev ? prev.speed: 2;
   const target = prev && prev.target ? prev.target.clone() : null;
+  const targetAgl = prev ? (prev.targetAgl||0) : 0;
   pushHistory();
-  a.nodes.push({ dronePos:new THREE.Vector3(x,terrainHeightAt(x,z)+agl,z), target, speed, agl });
+  a.nodes.push({ dronePos:new THREE.Vector3(x,terrainHeightAt(x,z)+agl,z), target, targetAgl, speed, agl });
   selectNode(a.nodes.length-1,false);
   camGoal.set(x,0,z); refreshAll();
 }
