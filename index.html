@@ -683,15 +683,34 @@ overlay.position.y=2.0; overlay.renderOrder=5; overlay.layers.set(1); overlay.vi
 
 // ---------- markers ----------
 const markerGroup=new THREE.Group(); scene.add(markerGroup);
+// Drone marker: a quadcopter sitting in the sky with a downward camera lens, so it
+// reads as the CAMERA POSITION at a glance rather than a generic path dot.
 function makeDroneMarker(ghost, agl){
   agl = agl || DEFAULT_AGL;
   const grp=new THREE.Group();
-  grp.add(new THREE.Mesh(new THREE.SphereGeometry(7,18,14),
-    new THREE.MeshBasicMaterial({color:0x9fd4ff,transparent:ghost,opacity:ghost?0.85:1})));
-  grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,-agl,0)]),
-    new THREE.LineBasicMaterial({color:0x3da9ff,transparent:true,opacity:.55})));
+  const bodyCol=0x3da9ff, liteCol=0x9fd4ff, op=ghost?0.85:1, arm=10.5;
+  // central body
+  grp.add(new THREE.Mesh(new THREE.BoxGeometry(10,4.5,10),
+    new THREE.MeshBasicMaterial({color:liteCol,transparent:ghost,opacity:op})));
+  // crossed arms
+  grp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(
+    [new THREE.Vector3(-arm,0,-arm),new THREE.Vector3(arm,0,arm),
+     new THREE.Vector3(-arm,0,arm),new THREE.Vector3(arm,0,-arm)]),
+    new THREE.LineBasicMaterial({color:bodyCol,transparent:true,opacity:.9})));
+  // four rotor rings at the arm tips
+  const rotorGeo=new THREE.RingGeometry(3.4,4.4,16);
+  const rotorMat=new THREE.MeshBasicMaterial({color:bodyCol,side:THREE.DoubleSide,transparent:true,opacity:.85});
+  [[-arm,-arm],[arm,arm],[-arm,arm],[arm,-arm]].forEach(([x,z])=>{
+    const r=new THREE.Mesh(rotorGeo,rotorMat); r.rotation.x=-Math.PI/2; r.position.set(x,0.6,z); grp.add(r); });
+  // camera lens pointing down (apex down) under the body
+  const lens=new THREE.Mesh(new THREE.ConeGeometry(3.6,5,14),
+    new THREE.MeshBasicMaterial({color:liteCol,transparent:ghost,opacity:op}));
+  lens.position.y=-4; lens.rotation.x=Math.PI; grp.add(lens);
+  // stem down to a footprint ring on the ground
+  grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-4,0),new THREE.Vector3(0,-agl,0)]),
+    new THREE.LineBasicMaterial({color:bodyCol,transparent:true,opacity:.55})));
   const disc=new THREE.Mesh(new THREE.RingGeometry(4,6,24),
-    new THREE.MeshBasicMaterial({color:0x3da9ff,side:THREE.DoubleSide,transparent:true,opacity:.8}));
+    new THREE.MeshBasicMaterial({color:bodyCol,side:THREE.DoubleSide,transparent:true,opacity:.8}));
   disc.rotation.x=-Math.PI/2; disc.position.y=-agl+2.5; grp.add(disc);
   grp.traverse(o=>o.renderOrder=10); return grp;
 }
@@ -790,7 +809,7 @@ function newPath(){
 // editor state — selection-based, no modal placement machine
 const mouseGround=new THREE.Vector3(); let mouseValid=false;
 const selection=new Set();   // explicitly multi-selected node indices
-let selMode='single';        // 'single' = edits cascade · 'multi' = edit selected set only
+let selMode='single';        // 'single' = edit only this node · 'multi' = edit the selected set
 let previewing=false, previewTime=0;
 let scrubbing=false;         // timeline playhead is being dragged
 let timeScale=1;             // global stretch applied by the total-time modal
@@ -1019,24 +1038,13 @@ function refreshAll(){
 // lighter update for selection changes that must NOT rebuild the gizmo DOM mid-drag
 function reflectSelection(){ renderPanel(); refreshPrompt(); renderTimeline(); }
 
-// ---------- edit application: cascade vs explicit multi-select ----------
-// Editing one property of the primary-selected node cascades to the consecutive
-// run of neighbours that currently share its value (both directions, stopping at
-// the first different value). When an explicit multi-selection is active, the edit
-// applies to exactly that set with no cascade. A shift-selected set of one is the
-// escape hatch to edit a single node without cascading.
-function cascadeRun(p,i,prop){
-  // For look-at, only nodes aimed at the EXACT same fixed point cascade together.
-  // "Looking forward" returns NaN so it never matches (not even another forward
-  // node) — toggling a forward node affects only itself.
-  const get=n=> prop==='speed' ? n.speed
-              : prop==='agl'   ? n.agl
-              : (n.target ? n.target.x+','+n.target.y+','+n.target.z : NaN);
-  const v0=get(p.nodes[i]); const run=[i];
-  // cascade forwards only: the edited node and the following run that shares its
-  // value, stopping at the first later waypoint the user set to something else.
-  for(let k=i+1;k<p.nodes.length && get(p.nodes[k])===v0;k++) run.push(k);
-  return run;
+// ---------- edit application: single node, or the explicit multi-selection ----------
+// A single-waypoint edit affects only that waypoint. When an explicit multi-selection
+// is active (shift-click / shift-drag), the edit applies to exactly that set. There is
+// no cascade to neighbouring waypoints.
+function nodesFor(p,base){
+  if(p.id===activeId && selMode==='multi' && selection.size && selection.has(base)) return [...selection];
+  return [base];
 }
 function writeProp(node,prop,value,idx){
   if(prop==='speed'){ node.speed=value; }
@@ -1049,9 +1057,7 @@ function applyEdit(prop,value,baseIdx){
   const base = baseIdx==null ? selectedNode : baseIdx;
   if(base<0 || !a.nodes[base]) return;
   pushHistory();
-  const targets = (selMode==='multi' && selection.size && selection.has(base))
-    ? [...selection] : cascadeRun(a,base,prop);
-  targets.forEach(idx=>writeProp(a.nodes[idx],prop,value,idx));
+  nodesFor(a,base).forEach(idx=>writeProp(a.nodes[idx],prop,value,idx));
   refreshAll();
 }
 // panel rows can belong to any path (not just the active one)
@@ -1059,7 +1065,7 @@ function applyEditFor(pathId,i,prop,value){
   if(pathId===activeId){ applyEdit(prop,value,i); return; }
   const p=paths.find(x=>x.id===pathId); if(!p) return;
   pushHistory();
-  cascadeRun(p,i,prop).forEach(idx=>writeProp(p.nodes[idx],prop,value,idx));
+  writeProp(p.nodes[i],prop,value,i);   // non-active paths are never multi-selected
   refreshAll();
 }
 
@@ -1479,7 +1485,7 @@ function startPlacement(e){
 
 // Right-press-drag: aim the selected waypoint's look-at, previewing until release.
 // Snaps onto a nearby existing look-at point so several waypoints can share the
-// exact same target (which then cascade together).
+// exact same target.
 function startLookatDrag(e){
   if(modalOpen) return;
   const a=active();
@@ -1619,10 +1625,9 @@ function setPipControls(dest,isNext){
   attachHeightScrub($('pipHv'), a.id, dest, 'pip');
 }
 // Which waypoints an edit on `base` affects — mirrors applyEdit: an active
-// multi-selection edits the set, otherwise the cascade run from that node.
+// multi-selection edits the set, otherwise only that node.
 function editTargets(p, base, prop){
-  if(p.id===activeId && selMode==='multi' && selection.size && selection.has(base)) return [...selection];
-  return cascadeRun(p, base, prop);
+  return nodesFor(p, base);
 }
 // Rebuild everything except the container holding the handle being dragged, so the
 // drag isn't interrupted. `where` = 'pip' | 'gizmo' | 'panel'.
@@ -1924,7 +1929,7 @@ function showInstructions(){
     'Click empty ground to drop a waypoint. It sits 120 m up and, by default, the camera looks forward along the path.',
     'Click a waypoint to select it. Its gizmo shows speed, height, a look-at toggle and a delete button; drag the square to move it.',
     'Use the look-at toggle to switch between “forward along path” and a fixed target you can drag — or just right-click the map to aim the selected waypoint at that spot.',
-    'Editing one waypoint cascades to its matching neighbours. Shift-click or shift-drag a box to select several and edit them together (no cascade).',
+    'Editing one waypoint changes only that waypoint. Shift-click or shift-drag a box to select several and edit them together.',
     'The path is coloured by speed (purple slow → orange fast); the chevrons show the same. Reorder waypoints by dragging them in the list.',
     'Scrub the timeline at the bottom to fly the camera; click its total time to retime the whole flight. Press I to focus, Esc to deselect.'
   ];
