@@ -425,11 +425,11 @@ const HEIGHT_MAX  = 300;
 const CONE_HALF   = 24;
 const SWEPT_LIGHT = 0.5;
 const DARKNESS    = 0.62;
-const PREVIEW_SPD = 40;
+const PREVIEW_SPD = 160;
 const HORIZON     = 0x16222e;
 const PALETTE     = [0x3da9ff, 0xff8a3d, 0x3ddc84, 0xc77dff, 0xffd23d, 0xff5b7c];
 // Per-waypoint speed: level 1..5 maps to a cruise velocity (m/s). 2 = normal.
-const SPEED_VELS  = [0, 12, 24, 40, 58, 80];
+const SPEED_VELS  = [0, 48, 96, 160, 232, 320];
 // Speed level 1..5 -> colour (purple = slow, orange = fast). Index 0 unused.
 const SPEED_COLOURS = [0x000000, 0xc77dff, 0x3da9ff, 0x3ddc84, 0xffd23d, 0xff8a3d];
 const FORWARD_DIST  = 250;   // metres ahead a "look forward" (targetless) node aims
@@ -759,7 +759,9 @@ const arrowPool=[], ARROW_MAX=240;
 const arrowGeo=new THREE.ConeGeometry(4.4,12,10);
 for(let i=0;i<ARROW_MAX;i++){ const a=new THREE.Mesh(arrowGeo,new THREE.MeshBasicMaterial({color:0x3da9ff}));
   a.visible=false; a.renderOrder=11; pathGroup.add(a); arrowPool.push(a); }
-let arrowPhase=0, arrowCount=0;   // arrowCount = number of chevron glyphs along the path
+let arrowCount=0;                 // arrowCount = number of chevron glyphs along the path
+const glyphU=new Float32Array(48);// per-glyph arc-length position, advanced at the local leg speed
+const ARROW_FLOW=0.5;             // visual scale from cruise m/s to arrow scroll rate
 
 function buildCurve(points){ return points.length>=2 ? new THREE.CatmullRomCurve3(points,false,'centripetal') : null; }
 
@@ -856,6 +858,7 @@ function rebuildPath(){
     pathLine=new THREE.Line(geo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.95}));
     pathLine.renderOrder=11; pathGroup.add(pathLine);
     arrowCount=Math.min(48,Math.max(3,Math.round(curveLen/90)));   // chevron glyphs along the path
+    for(let i=0;i<arrowCount;i++) glyphU[i]=i/arrowCount;          // re-seed even spacing
   }
   if(a && N>=2){
     const tps=a.nodes.map((n,i)=>{ const t=resolvedTarget(i); return t.clone().setY(t.y+2); });
@@ -874,13 +877,15 @@ function updateArrows(dt){
   const a=active();
   if(!droneCurve||arrowCount===0||!a||a.nodes.length<2){ arrowPool.forEach(m=>m.visible=false); return; }
   const N=a.nodes.length;
-  arrowPhase=(arrowPhase+dt*44/Math.max(curveLen,1))%1;
   const up=new THREE.Vector3(0,1,0), col=new THREE.Color();
   const dPar=10/Math.max(curveLen,1);   // ~10 m spacing between stacked chevrons
   let ci=0;
   for(let i=0;i<arrowCount && ci<ARROW_MAX;i++){
-    const u0=(i/arrowCount+arrowPhase)%1;
+    // advance each chevron group at its own leg speed so faster legs scroll faster
+    let u0=glyphU[i];
     const seg=Math.min(Math.floor(u0*(N-1)),N-2), lv=a.nodes[seg+1].speed;
+    u0=(u0 + dt*speedVel(lv)*ARROW_FLOW/Math.max(curveLen,1))%1;
+    glyphU[i]=u0;
     col.setHex(speedColour(lv));
     const tan=droneCurve.getTangentAt(u0);
     for(let c=0;c<lv && ci<ARROW_MAX;c++){          // chevron count == speed level
