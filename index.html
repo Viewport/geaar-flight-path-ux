@@ -179,6 +179,8 @@
   .modalCard h3{font-family:'Antonio',sans-serif;font-size:19px;letter-spacing:.04em;
     font-weight:600;margin-bottom:8px;}
   .modalCard p{font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:18px;}
+  .modalCard p.hint{font-size:12px;color:var(--path-blue);background:rgba(61,169,255,.08);
+    border-left:2px solid var(--path-blue);padding:8px 10px;border-radius:3px;margin-top:-8px;}
   .modalBtns{display:flex;gap:10px;justify-content:flex-end;}
   .modalBtns button{cursor:pointer;font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
     padding:9px 16px;border-radius:4px;border:1px solid var(--panel-line);background:transparent;
@@ -322,6 +324,12 @@
     font-family:'Roboto Mono',monospace;font-size:9px;color:var(--dim);pointer-events:none;}
   #timeline .tlHead{position:absolute;top:6px;bottom:6px;width:2px;background:#fff;
     box-shadow:0 0 6px rgba(255,255,255,.7);pointer-events:none;z-index:3;}
+  #timeline .tlEnd{position:absolute;top:4px;bottom:4px;width:11px;transform:translateX(-50%);
+    cursor:ew-resize;z-index:4;border-radius:3px;background:rgba(61,169,255,.25);
+    border:1px solid var(--path-blue);box-shadow:0 0 6px rgba(61,169,255,.5);
+    display:flex;align-items:center;justify-content:center;color:var(--path-blue);
+    font-size:9px;line-height:1;touch-action:none;}
+  #timeline .tlEnd:hover{background:rgba(61,169,255,.45);}
   #timeline .tlTime{flex:none;cursor:pointer;font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
     color:var(--ink);background:var(--panel);border:1px solid var(--panel-line);border-radius:4px;padding:8px 12px;}
   #timeline .tlTime:hover{border-color:var(--path-blue);}
@@ -905,6 +913,8 @@ function updateArrows(dt){
 function smoothstep(x){ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); }
 function speedVel(level){ return SPEED_VELS[level]||SPEED_VELS[2]; }
 function fmtTime(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); const ss=s%60; return m+':'+String(ss).padStart(2,'0'); }
+function fmtTimeWords(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), ss=s%60;
+  if(m && ss) return `${m} min ${ss} sec`; if(m) return `${m} min`; return `${ss} sec`; }
 
 function buildMotion(){
   motion=null;
@@ -1686,6 +1696,7 @@ function openTimeModal(){
   modalCard.innerHTML =
     '<h3>Adjust total flight time</h3>'+
     '<p>Drag up for a longer, slower flight or down for a shorter, faster one. Every leg stretches evenly, so the relative speeds you set per waypoint are kept.</p>'+
+    '<p class="hint">We recommend 90 to 120 seconds for long shots, under 20 seconds for something short.</p>'+
     '<div class="timeBody">'+
       '<div class="timeLabels"><span>Longer</span><span>Shorter</span></div>'+
       '<div class="timeTrack" id="tTrack"><div class="timeFill" id="tFill"></div><div class="timeHandle" id="tHandle"></div></div>'+
@@ -1730,8 +1741,8 @@ function renderTimeline(){
   const track=document.createElement('div'); track.className='tlTrack';
   scroll.appendChild(track); tl.appendChild(scroll);
 
-  const tbtn=document.createElement('button'); tbtn.className='tlTime';
-  tbtn.innerHTML='◷ '+fmtTime(total); tbtn.title='Total flight time — click to adjust';
+  const tbtn=document.createElement('button'); tbtn.className='tlTime'; tbtn.id='tlTimeBtn';
+  tbtn.innerHTML='◷ '+fmtTime(total); tbtn.title='Total flight time, click to adjust';
   tbtn.onclick=()=>{ if(!modalOpen) openTimeModal(); };
   tl.appendChild(tbtn);
 
@@ -1766,10 +1777,41 @@ function renderTimeline(){
   const head=document.createElement('div'); head.className='tlHead'; head.id='tlHead';
   head.style.left=X(Math.min(previewTime,total))+'px'; track.appendChild(head);
 
+  // end-of-flight marker: grab and drag to scale the whole flight time (left = compress, right = stretch)
+  const endH=document.createElement('div'); endH.className='tlEnd'; endH.id='tlEnd';
+  endH.textContent='↔'; endH.title='Drag to scale the whole flight time';
+  endH.style.left=X(total)+'px';
+  endH.addEventListener('pointerdown',e=>{ e.stopPropagation(); beginTimelineScale(e, track, trackW, total); });
+  track.appendChild(endH);
+
   track.addEventListener('pointerdown',e=>{
     if(e.target.classList.contains('tlDot')) return;
     beginScrub(e, track, trackW, total);
   });
+}
+// Drag the timeline end marker to rescale the whole flight; release raises a confirm.
+function beginTimelineScale(e, track, trackW, total){
+  const base=motion.total;                       // unscaled seconds (per-node speeds)
+  const pxPerSec=(trackW-2*tlPad)/Math.max(total,1e-6);
+  const minT=Math.max(5, base*0.2), maxT=base*4;
+  let newTotal=total;
+  const apply=ev=>{
+    const r=track.getBoundingClientRect();
+    newTotal=Math.max(minT, Math.min(maxT, (ev.clientX-r.left-tlPad)/pxPerSec));
+    const endH=$('tlEnd'); if(endH) endH.style.left=(tlPad+newTotal*pxPerSec)+'px';
+    const tb=$('tlTimeBtn'); if(tb) tb.innerHTML='◷ '+fmtTime(newTotal);
+  };
+  apply(e);
+  const mv=ev=>apply(ev);
+  const up=()=>{
+    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+    if(Math.abs(newTotal-total)<0.5){ renderTimeline(); return; }   // negligible move, snap back
+    showModal({ title:'Scale flight time',
+      body:`Scale timeline from ${fmtTimeWords(total)} to ${fmtTimeWords(newTotal)}? Every leg stretches evenly, so the relative speeds you set per waypoint are kept.`,
+      buttons:[ {label:'Cancel', onClick:renderTimeline},
+                {label:'Confirm', kind:'primary', onClick:()=>{ pushHistory(); timeScale=newTotal/base; rebuildPath(); }} ] });
+  };
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
 }
 function beginScrub(e,track,trackW,total){
   previewing=false; scrubbing=true; setPreviewBtn();
