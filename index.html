@@ -106,7 +106,7 @@
   .wp.empty{color:var(--dim);font-style:italic;cursor:default;justify-content:center;}
 
   /* PiP */
-  #pipFrame{left:16px;bottom:16px;width:340px;height:212px;
+  #pipFrame{left:16px;bottom:80px;width:340px;height:212px;
     border:1px solid var(--panel-line);border-radius:4px;overflow:hidden;
     box-shadow:0 8px 30px rgba(0,0,0,.55);display:none;}
   #pipFrame .pipLabel{position:absolute;top:0;left:0;right:0;display:flex;
@@ -120,7 +120,7 @@
   @keyframes blink{50%{opacity:.25;}}
 
   /* Buttons */
-  #actions{right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  #actions{right:16px;bottom:80px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
   #actions .btn{width:214px;justify-content:flex-start;}
   #actions .btn kbd{margin-left:auto;}
   .btn{pointer-events:auto;background:var(--panel);border:1px solid var(--panel-line);
@@ -138,7 +138,7 @@
   .btn[disabled]{opacity:.4;pointer-events:none;}
 
   /* Footer help */
-  #help{bottom:16px;left:50%;transform:translateX(-50%);
+  #help{bottom:80px;left:50%;transform:translateX(-50%);
     font-family:'Roboto Mono',monospace;font-size:10.5px;color:var(--dim);
     background:var(--panel);border:1px solid var(--panel-line);border-radius:4px;
     padding:7px 14px;display:flex;gap:16px;white-space:nowrap;}
@@ -199,7 +199,7 @@
   .instr .keys b{color:var(--ink);font-weight:500;}
 
   /* speed chevrons (1-5 fast-forward arrows) */
-  .spd{display:inline-flex;gap:1px;align-items:center;cursor:pointer;pointer-events:auto;
+  .spd{display:inline-flex;gap:1px;align-items:center;cursor:ew-resize;pointer-events:auto;
     padding:1px 3px;border-radius:3px;}
   .spd:hover{background:rgba(255,255,255,.08);}
   .cv{font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:#3d454c;line-height:1;}
@@ -208,6 +208,7 @@
   .gizmo .gz-spd{position:absolute;left:14px;top:8px;display:flex;gap:1px;align-items:center;
     background:var(--panel-solid);border:1px solid var(--panel-line);border-radius:3px;padding:2px 5px;
     pointer-events:auto;cursor:pointer;}
+  .gizmo .gz-spd{cursor:ew-resize;}
   .gizmo .gz-spd:hover{border-color:var(--green);}
   #pipFrame .pipCtl{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
     display:flex;align-items:stretch;gap:6px;}
@@ -250,19 +251,80 @@
   .gizmo .gz-hgt .hb{cursor:pointer;width:16px;height:16px;border-radius:3px;border:1px solid var(--panel-line);
     background:transparent;color:var(--ink);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
   .gizmo .gz-hgt .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
-  .gizmo .gz-hgt .hv{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--ink);min-width:38px;text-align:center;}
+  .gizmo .gz-hgt .hv{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--ink);min-width:38px;text-align:center;cursor:ns-resize;}
   #pipInput{position:absolute;inset:0;pointer-events:none;}
   #pipFrame.max #pipInput{cursor:grab;}
 
   /* waypoint two-row layout with height control */
   .wp{flex-direction:column;align-items:stretch;gap:4px;}
   .wpTop{display:flex;align-items:center;gap:7px;}
-  .wpCtl{display:flex;align-items:center;gap:10px;padding-left:21px;}
+  .wpCtl{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding-left:21px;}
+  .lookPill{display:inline-flex;align-items:center;font-family:'Roboto Mono',monospace;font-size:10px;
+    letter-spacing:.02em;padding:2px 9px;border-radius:10px;cursor:pointer;pointer-events:auto;white-space:nowrap;
+    border:1px solid var(--vp-red);color:#ff7d97;background:transparent;opacity:.5;}
+  .lookPill.fixed{background:rgba(255,0,55,.14);opacity:1;}
+  .lookPill:hover{opacity:1;}
   .hgt{display:inline-flex;align-items:center;gap:4px;}
   .hgt .hb{pointer-events:auto;cursor:pointer;width:17px;height:17px;border-radius:3px;border:1px solid var(--panel-line);
     background:transparent;color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;}
   .hgt .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
-  .hgt .hv{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--ink);min-width:42px;text-align:center;}
+  .hgt .hv{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--ink);min-width:42px;text-align:center;cursor:ns-resize;}
+
+  /* read-only pip info label (replaces editable speed/height) */
+  #pipInfo{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(8,10,13,.82);
+    border:1px solid var(--panel-line);border-radius:6px;padding:4px 9px 5px;pointer-events:auto;}
+  #pipInfo .pipHdr{font-family:'Roboto Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+    color:var(--dim);text-transform:uppercase;}
+  #pipInfo .pipRow{display:flex;align-items:center;gap:8px;}
+  #pipInfo .spd{cursor:ew-resize;padding:1px 3px;border-radius:3px;}
+  #pipInfo .spd:hover{background:rgba(255,255,255,.08);}
+  #pipInfo .hgt{display:inline-flex;align-items:center;gap:3px;}
+  #pipInfo .hv{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--ink);min-width:40px;text-align:center;
+    cursor:ns-resize;border-radius:3px;padding:1px 2px;}
+  #pipInfo .hv:hover{background:rgba(255,255,255,.08);}
+  #pipInfo .hb{cursor:pointer;width:18px;height:18px;border-radius:3px;border:1px solid var(--panel-line);
+    background:transparent;color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  #pipInfo .hb:hover{border-color:var(--path-blue);color:var(--path-blue);}
+
+  /* selected gizmo highlight + look-at toggle */
+  .gizmo.sel .gz-sq{background:#fff;box-shadow:0 0 0 2px rgba(61,169,255,.6);}
+  .gizmo .gz-look{position:absolute;left:-34px;top:-30px;width:22px;height:22px;border-radius:50%;
+    background:var(--panel-solid);border:1px solid var(--panel-line);color:var(--dim);font-size:13px;
+    line-height:20px;text-align:center;cursor:pointer;pointer-events:auto;opacity:.45;}
+  .gizmo .gz-look.on{border-color:var(--vp-red);color:#ff7d97;opacity:1;}
+  .gizmo .gz-look:hover{border-color:var(--path-blue);color:var(--path-blue);opacity:1;}
+  .wp.selected{background:rgba(61,169,255,.12);}
+
+  /* bottom timeline node bar */
+  #timeline{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;
+    width:min(900px,calc(100vw - 360px));height:60px;z-index:11;
+    display:flex;align-items:center;gap:8px;padding:7px 10px;
+    background:rgba(10,13,17,.94);border:1px solid var(--panel-line);border-radius:10px;
+    box-shadow:0 10px 34px rgba(0,0,0,.5);backdrop-filter:blur(8px);pointer-events:auto;}
+  #timeline .tlPlay{flex:none;cursor:pointer;width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;
+    color:var(--ink);background:var(--green);border:none;opacity:.92;}
+  #timeline .tlPlay:hover{opacity:1;}
+  #timeline .tlPlay.playing{background:var(--vp-red);}
+  #timeline .tlScroll{flex:1;height:100%;overflow-x:auto;overflow-y:hidden;}
+  #timeline .tlScroll::-webkit-scrollbar{height:6px;}
+  #timeline .tlScroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
+  #timeline .tlTrack{position:relative;height:100%;min-width:100%;cursor:crosshair;}
+  #timeline .tlSeg{position:absolute;top:50%;height:5px;transform:translateY(-50%);border-radius:3px;}
+  #timeline .tlChev{position:absolute;top:calc(50% - 16px);transform:translateX(-50%);
+    font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;white-space:nowrap;pointer-events:none;}
+  #timeline .tlDot{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
+    transform:translate(-50%,-50%);background:var(--panel-solid);border:2px solid var(--ink);cursor:pointer;z-index:2;}
+  #timeline .tlDot:hover{border-color:var(--path-blue);}
+  #timeline .tlDot.sel{border-color:var(--path-blue);box-shadow:0 0 0 3px rgba(61,169,255,.3);}
+  #timeline .tlNum{position:absolute;top:calc(50% + 11px);transform:translateX(-50%);
+    font-family:'Roboto Mono',monospace;font-size:9px;color:var(--dim);pointer-events:none;}
+  #timeline .tlHead{position:absolute;top:6px;bottom:6px;width:2px;background:#fff;
+    box-shadow:0 0 6px rgba(255,255,255,.7);pointer-events:none;z-index:3;}
+  #timeline .tlTime{flex:none;cursor:pointer;font-family:'Roboto',sans-serif;font-size:13px;font-weight:500;
+    color:var(--ink);background:var(--panel);border:1px solid var(--panel-line);border-radius:4px;padding:8px 12px;}
+  #timeline .tlTime:hover{border-color:var(--path-blue);}
 
   @media (hover:none){ .btn{padding:13px 20px;font-size:14px;} }
   @media (max-width:920px){
@@ -303,27 +365,22 @@
 </div>
 
 <div class="hud" id="pipFrame">
-  <div class="pipInput" id="pipInput"></div>
   <div class="pipLabel"><span>Camera preview</span>
     <span class="rec"><button class="pipMax clickable" id="btnPipMax" title="Maximise view">⤢</button>
     <span class="dot"></span><span id="pipState">live</span></span></div>
-  <div class="pipCtl" id="pipCtl" style="display:none;">
-    <div class="pipChip" id="pipSpeed"></div>
-    <div class="pipChip" id="pipHeight"></div>
-  </div>
+  <div id="pipInfo" style="display:none;"></div>
 </div>
 
 <div class="hud" id="actions">
   <button class="btn preview clickable" id="btnPreview" disabled>▶ Preview flight</button>
   <button class="btn clickable" id="btnTime" disabled>◷ Total time</button>
-  <button class="btn toggle clickable" id="btnMove">✛ Move nodes <kbd>Ctrl</kbd></button>
-  <button class="btn clickable" id="btnAddWp">＋ Add waypoints</button>
   <button class="btn clickable" id="btnRecentre">⌖ Recentre <kbd>I</kbd></button>
-  <button class="btn primary clickable" id="btnEnd">Finish path <kbd>Esc</kbd></button>
   <button class="btn danger clickable" id="btnReset">Reset all</button>
 </div>
 
 <div class="hud" id="help"></div>
+
+<div class="hud" id="timeline" style="display:none;"></div>
 
 <div id="gizmoLayer"></div>
 <div id="modalWrap"><div class="modalCard" id="modalCard"></div></div>
@@ -373,6 +430,10 @@ const HORIZON     = 0x16222e;
 const PALETTE     = [0x3da9ff, 0xff8a3d, 0x3ddc84, 0xc77dff, 0xffd23d, 0xff5b7c];
 // Per-waypoint speed: level 1..5 maps to a cruise velocity (m/s). 2 = normal.
 const SPEED_VELS  = [0, 12, 24, 40, 58, 80];
+// Speed level 1..5 -> colour (purple = slow, orange = fast). Index 0 unused.
+const SPEED_COLOURS = [0x000000, 0xc77dff, 0x3da9ff, 0x3ddc84, 0xffd23d, 0xff8a3d];
+const FORWARD_DIST  = 250;   // metres ahead a "look forward" (targetless) node aims
+function speedColour(level){ return SPEED_COLOURS[level] || SPEED_COLOURS[2]; }
 const EASE_FRAC   = 0.22;   // fraction of the path eased in / out (large, for filming)
 const EASE_FLOOR  = 0.12;   // speed at the very start / end as a fraction of cruise
 
@@ -420,9 +481,7 @@ function placeMapCam(){
 placeMapCam();
 
 const pipCam = new THREE.PerspectiveCamera(50, 340/212, 2, 32000);
-// editCam is the 3D editing view shown in the preview window while Move nodes is on.
-const editCam = new THREE.PerspectiveCamera(50, 1, 2, 32000); editCam.layers.enable(2);
-let editYaw=-0.7, editPitch=0.62, selectedNode=0;
+let selectedNode=-1;   // primary selected waypoint index (-1 = none)
 
 // ---------- sky ----------
 scene.add(new THREE.Mesh(
@@ -656,48 +715,51 @@ const sightGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new
 const sightLine=new THREE.Line(sightGeo,new THREE.LineDashedMaterial({color:0xffffff,transparent:true,opacity:.45,dashSize:10,gapSize:8}));
 sightLine.renderOrder=10; sightLine.visible=false; scene.add(sightLine);
 
-// ---------- 3D transform gizmos (layer 2: only the edit camera sees them) ----------
-const gizmo3D=new THREE.Group(); scene.add(gizmo3D);
-const AXV={ x:new THREE.Vector3(1,0,0), z:new THREE.Vector3(0,0,-1), y:new THREE.Vector3(0,1,0) };
-function makeAxisArrow(axis,color){
-  const grp=new THREE.Group(), L=95, r=3.4, mat=new THREE.MeshBasicMaterial({color});
-  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,10),mat); shaft.position.y=L/2;
-  const head=new THREE.Mesh(new THREE.ConeGeometry(r*2.7,L*0.3,12),mat); head.position.y=L+L*0.15;
-  grp.add(shaft,head);
-  if(axis==='x') grp.rotation.z=-Math.PI/2;        // points +X (east)
-  else if(axis==='z') grp.rotation.x=-Math.PI/2;   // points -Z (north)
-  grp.traverse(o=>{ if(o.isMesh){ o.userData={axis}; o.layers.set(2); } });
-  return grp;
-}
-function build3DGizmos(){
-  while(gizmo3D.children.length) gizmo3D.remove(gizmo3D.children[0]);
-  const a=active(); if(!a) return;
-  a.nodes.forEach((n,i)=>{
-    const grp=new THREE.Group(); grp.position.copy(n.dronePos);
-    [makeAxisArrow('x',0xff4d4d), makeAxisArrow('z',0x3ddc84), makeAxisArrow('y',0x5fb0ff)].forEach(arw=>{
-      arw.traverse(o=>{ if(o.isMesh) o.userData.node=i; }); grp.add(arw); });
-    const hub=new THREE.Mesh(new THREE.SphereGeometry(6,12,10), new THREE.MeshBasicMaterial({color:0xffffff}));
-    hub.layers.set(2); grp.add(hub);
-    gizmo3D.add(grp);
-  });
-}
-function frameEditCam(){
-  const a=active(); if(!a||!a.nodes.length) return;
-  const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length);
-  let rad=250; a.nodes.forEach(n=>rad=Math.max(rad,n.dronePos.distanceTo(c)));
-  const dist=rad*1.7+500;
-  const dir=new THREE.Vector3(Math.sin(editYaw)*Math.cos(editPitch), Math.sin(editPitch), Math.cos(editYaw)*Math.cos(editPitch));
-  editCam.position.copy(c).addScaledVector(dir,dist); editCam.up.set(0,1,0); editCam.lookAt(c);
+// solid red line from the selected waypoint to its look-at location (map view only)
+const lookatGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+const lookatLine=new THREE.Line(lookatGeo,new THREE.LineBasicMaterial({color:0xff0037}));
+lookatLine.renderOrder=11; lookatLine.visible=false; lookatLine.layers.set(1); scene.add(lookatLine);
+
+// moving camera marker shown on the path while previewing / scrubbing (map view only):
+// a wireframe frustum (apex = camera position, opening toward the look-at) plus a ring.
+const camMarker=new THREE.Group(); camMarker.visible=false; camMarker.layers.set(1); scene.add(camMarker);
+const frustumGeo=new THREE.BufferGeometry();
+frustumGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(8*2*3),3)); // 8 segments
+const frustumLines=new THREE.LineSegments(frustumGeo,new THREE.LineBasicMaterial({color:0x9fd4ff}));
+frustumLines.renderOrder=12; frustumLines.layers.set(1); camMarker.add(frustumLines);
+const camRing=new THREE.Mesh(new THREE.RingGeometry(7,10,24),
+  new THREE.MeshBasicMaterial({color:0x9fd4ff,side:THREE.DoubleSide,transparent:true,opacity:.95,depthTest:false}));
+camRing.rotation.x=-Math.PI/2; camRing.renderOrder=12; camRing.layers.set(1); camMarker.add(camRing);
+const _fw=new THREE.Vector3(),_rt=new THREE.Vector3(),_up=new THREE.Vector3(),_fc=new THREE.Vector3(),_c=[];
+for(let i=0;i<4;i++) _c.push(new THREE.Vector3());
+function updateCamMarker(P,T){
+  _fw.subVectors(T,P); if(_fw.lengthSq()<1e-6){ camMarker.visible=false; return; }
+  _fw.normalize();
+  _rt.crossVectors(_fw,new THREE.Vector3(0,1,0)); if(_rt.lengthSq()<1e-6) _rt.set(1,0,0); _rt.normalize();
+  _up.crossVectors(_rt,_fw).normalize();
+  const d=150, w=72, h=48;
+  _fc.copy(P).addScaledVector(_fw,d);
+  _c[0].copy(_fc).addScaledVector(_rt, w).addScaledVector(_up, h);
+  _c[1].copy(_fc).addScaledVector(_rt,-w).addScaledVector(_up, h);
+  _c[2].copy(_fc).addScaledVector(_rt,-w).addScaledVector(_up,-h);
+  _c[3].copy(_fc).addScaledVector(_rt, w).addScaledVector(_up,-h);
+  const segs=[P,_c[0], P,_c[1], P,_c[2], P,_c[3], _c[0],_c[1], _c[1],_c[2], _c[2],_c[3], _c[3],_c[0]];
+  const arr=frustumGeo.attributes.position.array;
+  for(let i=0;i<segs.length;i++){ arr[i*3]=segs[i].x; arr[i*3+1]=segs[i].y; arr[i*3+2]=segs[i].z; }
+  frustumGeo.attributes.position.needsUpdate=true;
+  camRing.position.copy(P);
+  camMarker.visible=true;
 }
 
 // ---------- path visuals ----------
 const pathGroup=new THREE.Group(); scene.add(pathGroup);
 const inactiveGroup=new THREE.Group(); scene.add(inactiveGroup);
 let pathLine=null, targetLine=null, droneCurve=null, curveLen=0;
-const arrowPool=[], ARROW_MAX=80;
-const arrowGeo=new THREE.ConeGeometry(4.4,12,10), arrowMat=new THREE.MeshBasicMaterial({color:0x3da9ff});
-for(let i=0;i<ARROW_MAX;i++){ const a=new THREE.Mesh(arrowGeo,arrowMat); a.visible=false; a.renderOrder=11; pathGroup.add(a); arrowPool.push(a); }
-let arrowPhase=0, arrowCount=0;
+const arrowPool=[], ARROW_MAX=240;
+const arrowGeo=new THREE.ConeGeometry(4.4,12,10);
+for(let i=0;i<ARROW_MAX;i++){ const a=new THREE.Mesh(arrowGeo,new THREE.MeshBasicMaterial({color:0x3da9ff}));
+  a.visible=false; a.renderOrder=11; pathGroup.add(a); arrowPool.push(a); }
+let arrowPhase=0, arrowCount=0;   // arrowCount = number of chevron glyphs along the path
 
 function buildCurve(points){ return points.length>=2 ? new THREE.CatmullRomCurve3(points,false,'centripetal') : null; }
 
@@ -713,15 +775,25 @@ function newPath(){
   paths.push(p); return p;
 }
 
-// editor state
-let state='IDLE';          // IDLE | PLACE_FIRST_DRONE | PLACE_TARGET | PLACE_DRONE
-let pending=null;          // {dronePos, target}
+// editor state — selection-based, no modal placement machine
 const mouseGround=new THREE.Vector3(); let mouseValid=false;
-let moveToolActive=false, ctrlHeld=false;
-const gizmoOn=()=>moveToolActive||ctrlHeld;
+const selection=new Set();   // explicitly multi-selected node indices
+let selMode='single';        // 'single' = edits cascade · 'multi' = edit selected set only
 let previewing=false, previewTime=0;
-let timeScale=1;          // global stretch applied by the total-time modal
-let motion=null;          // precomputed eased motion profile for the active path
+let scrubbing=false;         // timeline playhead is being dragged
+let timeScale=1;             // global stretch applied by the total-time modal
+let motion=null;             // precomputed eased motion profile for the active path
+
+function clearSelection(){ selectedNode=-1; selection.clear(); selMode='single'; }
+function selectNode(i, additive){
+  if(additive){
+    selMode='multi';
+    if(selection.has(i)) selection.delete(i); else selection.add(i);
+    selectedNode = selection.size ? i : -1;
+  } else {
+    selMode='single'; selection.clear(); selection.add(i); selectedNode=i;
+  }
+}
 
 // ---------- DOM refs ----------
 const $=id=>document.getElementById(id);
@@ -730,62 +802,95 @@ const promptEl=$('prompt');
 function setPrompt(html,mode){ promptEl.innerHTML=html; promptEl.className=mode||''; }
 function refreshPrompt(){
   const a=active();
-  if(state==='PLACE_FIRST_DRONE')
-    setPrompt('<b>Click to place the starting drone position.</b><span class="sub">Sits 120 m above ground level at that point</span>');
-  else if(state==='PLACE_TARGET')
-    setPrompt('<b>Aim the camera, then click to set its target.</b><span class="sub">The lit cone is what this camera sees · preview bottom-left</span>','target-mode');
-  else if(state==='PLACE_DRONE')
-    setPrompt('<b>Click to place the next drone position.</b><span class="sub">Path follows the cursor · camera keeps its previous target</span>');
-  else if(a && a.nodes.length>=2)
-    setPrompt(`<b>${a.name} · ${a.nodes.length} waypoints · ${Math.round(curveLen)} m.</b><span class="sub">Hold Ctrl or use Move nodes to adjust · Add waypoints to extend · Preview to fly</span>`,'done-mode');
-  else if(a && a.nodes.length>0)
-    setPrompt(`<b>${a.name} · ${a.nodes.length} waypoint.</b><span class="sub">Add another waypoint to make a flyable path</span>`);
-  else
+  if(!a){
     setPrompt('<b>Add a flight path with + , or pick one from the list.</b><span class="sub">Then click on the map to lay down waypoints</span>');
+    return;
+  }
+  if(!a.nodes.length){
+    setPrompt('<b>Click the map to place your first waypoint.</b><span class="sub">It sits 120 m above the ground · the camera looks forward along the path</span>');
+    return;
+  }
+  if(selection.size>1){
+    setPrompt(`<b>${selection.size} waypoints selected.</b><span class="sub">Change speed / height / look-at to apply to all of them</span>`,'target-mode');
+    return;
+  }
+  if(selectedNode>=0 && a.nodes[selectedNode]){
+    const n=a.nodes[selectedNode];
+    const look = n.target ? 'fixed target' : 'forward along path';
+    setPrompt(`<b>Waypoint ${selectedNode+1} · ${n.agl} m · speed ${n.speed} · ${look}.</b><span class="sub">Drag to move · right-click the map to aim its look-at · click empty map to add another</span>`,'target-mode');
+    return;
+  }
+  if(a.nodes.length>=2){
+    setPrompt(`<b>${a.name} · ${a.nodes.length} waypoints · ${Math.round(curveLen)} m.</b><span class="sub">Click a waypoint to edit it · click empty map to extend · Preview to fly</span>`,'done-mode');
+    return;
+  }
+  setPrompt(`<b>${a.name} · 1 waypoint.</b><span class="sub">Click the map to add another and make a flyable path</span>`);
 }
 
 // ============================ REBUILD ============================
 function dronePointsForActive(){
   const a=active(); if(!a) return [];
-  const pts=a.nodes.map(n=>n.dronePos.clone());
-  if(pending && (state==='PLACE_TARGET'||state==='PLACE_DRONE')) pts.push(pending.dronePos.clone());
-  return pts;
+  return a.nodes.map(n=>n.dronePos.clone());
 }
 function rebuildPath(){
-  if(pathLine){ pathGroup.remove(pathLine); pathLine.geometry.dispose(); pathLine=null; }
+  if(pathLine){ pathGroup.remove(pathLine); pathLine.geometry.dispose(); pathLine.material.dispose(); pathLine=null; }
   if(targetLine){ pathGroup.remove(targetLine); targetLine.geometry.dispose(); targetLine=null; }
   droneCurve=null; curveLen=0; arrowCount=0; arrowPool.forEach(a=>a.visible=false);
   const a=active();
   const pts=dronePointsForActive();
+  const N=a?a.nodes.length:0;
   if(pts.length>=2){
     droneCurve=buildCurve(pts); curveLen=droneCurve.getLength();
-    pathLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(droneCurve.getPoints(400)),
-      new THREE.LineBasicMaterial({color:a?a.colour:0x3da9ff,transparent:true,opacity:.95}));
-    pathLine.renderOrder=11; pathGroup.add(pathLine);
-    arrowCount=Math.min(ARROW_MAX,Math.max(4,Math.round(curveLen/60)));
-  }
-  if(a){
-    const tps=a.nodes.map(n=>n.target.clone().setY(n.target.y+2));
-    if(pending && (state==='PLACE_TARGET'||state==='PLACE_DRONE')) tps.push(pending.target.clone().setY(pending.target.y+2));
-    if(tps.length>=2){
-      targetLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(tps),
-        new THREE.LineDashedMaterial({color:0xff5b7c,transparent:true,opacity:.5,dashSize:8,gapSize:7}));
-      targetLine.computeLineDistances(); targetLine.renderOrder=10; pathGroup.add(targetLine);
+    // vertex-coloured line: each sample takes the colour of the speed of the segment it sits in
+    const SAMPLES=400, cps=droneCurve.getPoints(SAMPLES);
+    const posArr=new Float32Array(cps.length*3), colArr=new Float32Array(cps.length*3), col=new THREE.Color();
+    for(let k=0;k<cps.length;k++){
+      const u=k/SAMPLES, seg=Math.min(Math.floor(u*(N-1)),N-2);
+      col.setHex(speedColour(a.nodes[seg+1].speed));
+      posArr[k*3]=cps[k].x; posArr[k*3+1]=cps[k].y; posArr[k*3+2]=cps[k].z;
+      colArr[k*3]=col.r; colArr[k*3+1]=col.g; colArr[k*3+2]=col.b;
     }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(posArr,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(colArr,3));
+    pathLine=new THREE.Line(geo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.95}));
+    pathLine.renderOrder=11; pathGroup.add(pathLine);
+    arrowCount=Math.min(48,Math.max(3,Math.round(curveLen/90)));   // chevron glyphs along the path
+  }
+  if(a && N>=2){
+    const tps=a.nodes.map((n,i)=>{ const t=resolvedTarget(i); return t.clone().setY(t.y+2); });
+    targetLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(tps),
+      new THREE.LineDashedMaterial({color:0xff5b7c,transparent:true,opacity:.5,dashSize:8,gapSize:7}));
+    targetLine.computeLineDistances(); targetLine.renderOrder=10; pathGroup.add(targetLine);
   }
   $('roLen').textContent=Math.round(curveLen);
-  $('roCount').textContent=a?a.nodes.length:0;
+  $('roCount').textContent=N;
   buildMotion();
   $('roTime').textContent = motion ? fmtTime(motion.total*timeScale) : '0:00';
+  renderTimeline();
   updateButtons();
 }
 function updateArrows(dt){
-  if(!droneCurve||arrowCount===0) return;
+  const a=active();
+  if(!droneCurve||arrowCount===0||!a||a.nodes.length<2){ arrowPool.forEach(m=>m.visible=false); return; }
+  const N=a.nodes.length;
   arrowPhase=(arrowPhase+dt*44/Math.max(curveLen,1))%1;
-  const up=new THREE.Vector3(0,1,0);
-  for(let i=0;i<arrowCount;i++){ const a=arrowPool[i]; const u=(i/arrowCount+arrowPhase)%1;
-    a.position.copy(droneCurve.getPointAt(u)); a.quaternion.setFromUnitVectors(up,droneCurve.getTangentAt(u)); a.visible=true; }
-  for(let i=arrowCount;i<ARROW_MAX;i++) arrowPool[i].visible=false;
+  const up=new THREE.Vector3(0,1,0), col=new THREE.Color();
+  const dPar=10/Math.max(curveLen,1);   // ~10 m spacing between stacked chevrons
+  let ci=0;
+  for(let i=0;i<arrowCount && ci<ARROW_MAX;i++){
+    const u0=(i/arrowCount+arrowPhase)%1;
+    const seg=Math.min(Math.floor(u0*(N-1)),N-2), lv=a.nodes[seg+1].speed;
+    col.setHex(speedColour(lv));
+    const tan=droneCurve.getTangentAt(u0);
+    for(let c=0;c<lv && ci<ARROW_MAX;c++){          // chevron count == speed level
+      const u=((u0 - c*dPar)%1+1)%1, m=arrowPool[ci++];
+      m.position.copy(droneCurve.getPointAt(u));
+      m.quaternion.setFromUnitVectors(up,tan);
+      m.material.color.copy(col); m.visible=true;
+    }
+  }
+  for(;ci<ARROW_MAX;ci++) arrowPool[ci].visible=false;
 }
 
 // ---------- speed / time model ----------
@@ -822,27 +927,48 @@ function motionSample(timeSec){
   while(lo<hi-1){ const mid=(lo+hi)>>1; if(cum[mid]<=tt) lo=mid; else hi=mid; }
   const f=(tt-cum[lo])/Math.max(1e-6,cum[hi]-cum[lo]); return (lo+f)/motion.M;
 }
+// Resolve a node's look-at point. An explicit node.target wins; otherwise the
+// camera looks "forward" along the drone-path tangent at that node (the last node
+// keeps the direction it arrived on). This is the single converter every consumer
+// (motion, viewing cones, target line, preview, timeline) must route through.
+function resolvedTarget(i){
+  const a=active(); if(!a||!a.nodes[i]) return new THREE.Vector3();
+  const n=a.nodes[i];
+  if(n.target) return n.target;
+  const N=a.nodes.length;
+  if(droneCurve && N>=2){
+    const u=THREE.MathUtils.clamp(i/(N-1),0,1);
+    const tan=droneCurve.getTangentAt(u);
+    const px=n.dronePos.x+tan.x*FORWARD_DIST, pz=n.dronePos.z+tan.z*FORWARD_DIST;
+    return new THREE.Vector3(px, terrainHeightAt(px,pz), pz);
+  }
+  const px=n.dronePos.x, pz=n.dronePos.z+FORWARD_DIST;   // single-node fallback: look north
+  return new THREE.Vector3(px, terrainHeightAt(px,pz), pz);
+}
 function targetAtParam(param){
   const a=active(), N=a.nodes.length, x=Math.min(param*(N-1),N-1-1e-6), i=Math.floor(x), f=x-i;
-  return a.nodes[i].target.clone().lerp(a.nodes[i+1].target,f);
+  return resolvedTarget(i).clone().lerp(resolvedTarget(i+1),f);
 }
 function speedChevrons(level){
-  let s=''; for(let i=1;i<=5;i++) s+=`<span class="cv${i<=level?' on':''}">›</span>`; return s;
+  const hex='#'+speedColour(level).toString(16).padStart(6,'0');   // match the line/arrow colour
+  let s=''; for(let i=1;i<=5;i++){ const on=i<=level;
+    s+=`<span class="cv${on?' on':''}"${on?` style="color:${hex}"`:''}>›</span>`; }
+  return s;
 }
-function cycleSpeed(node){ node.speed = (node.speed%5)+1; }
 function rebuildCommitted(){
   while(markerGroup.children.length){ const c=markerGroup.children[0]; markerGroup.remove(c); }
   keyframeSectors.forEach(s=>lightScene.remove(s)); keyframeSectors.length=0;
   while(sweptGroup.children.length) sweptGroup.remove(sweptGroup.children[0]);
   const a=active();
   if(a){
-    a.nodes.forEach(n=>{
+    a.nodes.forEach((n,i)=>{
       const dm=makeDroneMarker(false,n.agl); dm.position.copy(n.dronePos); markerGroup.add(dm);
       const cubes=makeHeightCubes(n.agl);
       cubes.position.set(n.dronePos.x, terrainHeightAt(n.dronePos.x,n.dronePos.z), n.dronePos.z);
       markerGroup.add(cubes);
-      const tm=makeTargetMarker(false); tm.position.set(n.target.x,n.target.y+2.5,n.target.z); markerGroup.add(tm);
-      const ks=new THREE.Mesh(sectorGeo,brightSectorMat); orientSector(ks,n.dronePos,n.target);
+      const t=resolvedTarget(i);
+      if(n.target){ const tm=makeTargetMarker(false); tm.position.set(t.x,t.y+2.5,t.z); markerGroup.add(tm); }
+      const ks=new THREE.Mesh(sectorGeo,brightSectorMat); orientSector(ks,n.dronePos,t);
       lightScene.add(ks); keyframeSectors.push(ks);
     });
     if(a.nodes.length>=2){
@@ -850,13 +976,12 @@ function rebuildCommitted(){
       const segs=a.nodes.length-1, STEPS=16;
       for(let i=0;i<segs;i++) for(let s=1;s<STEPS;s++){
         const f=s/STEPS, u=(i+f)/segs, p=curve.getPoint(u);
-        const t=a.nodes[i].target.clone().lerp(a.nodes[i+1].target,f);
+        const t=resolvedTarget(i).clone().lerp(resolvedTarget(i+1),f);
         const m=new THREE.Mesh(sectorGeo,sweptSectorMat); orientSector(m,p,t); sweptGroup.add(m);
       }
     }
   }
-  overlay.visible = !!(a && (a.nodes.length>=1 || pending));
-  build3DGizmos();
+  overlay.visible = !!(a && a.nodes.length>=1);
 }
 function rebuildInactive(){
   while(inactiveGroup.children.length){ const c=inactiveGroup.children[0]; inactiveGroup.remove(c);
@@ -870,8 +995,82 @@ function rebuildInactive(){
   });
 }
 function refreshAll(){
-  rebuildCommitted(); rebuildPath(); rebuildInactive(); renderPanel(); refreshPrompt(); buildGizmos();
+  // rebuildPath first so droneCurve is current before resolvedTarget()'s tangent
+  // fallback is evaluated inside rebuildCommitted's viewing-cone build.
+  rebuildPath(); rebuildCommitted(); rebuildInactive(); renderPanel(); refreshPrompt(); buildGizmos();
 }
+// lighter update for selection changes that must NOT rebuild the gizmo DOM mid-drag
+function reflectSelection(){ renderPanel(); refreshPrompt(); renderTimeline(); }
+
+// ---------- edit application: cascade vs explicit multi-select ----------
+// Editing one property of the primary-selected node cascades to the consecutive
+// run of neighbours that currently share its value (both directions, stopping at
+// the first different value). When an explicit multi-selection is active, the edit
+// applies to exactly that set with no cascade. A shift-selected set of one is the
+// escape hatch to edit a single node without cascading.
+function cascadeRun(p,i,prop){
+  // For look-at, only nodes aimed at the EXACT same fixed point cascade together.
+  // "Looking forward" returns NaN so it never matches (not even another forward
+  // node) — toggling a forward node affects only itself.
+  const get=n=> prop==='speed' ? n.speed
+              : prop==='agl'   ? n.agl
+              : (n.target ? n.target.x+','+n.target.y+','+n.target.z : NaN);
+  const v0=get(p.nodes[i]); const run=[i];
+  // cascade forwards only: the edited node and the following run that shares its
+  // value, stopping at the first later waypoint the user set to something else.
+  for(let k=i+1;k<p.nodes.length && get(p.nodes[k])===v0;k++) run.push(k);
+  return run;
+}
+function writeProp(node,prop,value,idx){
+  if(prop==='speed'){ node.speed=value; }
+  else if(prop==='agl'){ node.agl=Math.max(HEIGHT_MIN,Math.min(HEIGHT_MAX,value));
+    node.dronePos.y=terrainHeightAt(node.dronePos.x,node.dronePos.z)+node.agl; }
+  else if(prop==='lookat'){ node.target = value==='forward' ? null : resolvedTarget(idx).clone(); }
+}
+function applyEdit(prop,value,baseIdx){
+  const a=active(); if(!a) return;
+  const base = baseIdx==null ? selectedNode : baseIdx;
+  if(base<0 || !a.nodes[base]) return;
+  pushHistory();
+  const targets = (selMode==='multi' && selection.size && selection.has(base))
+    ? [...selection] : cascadeRun(a,base,prop);
+  targets.forEach(idx=>writeProp(a.nodes[idx],prop,value,idx));
+  refreshAll();
+}
+// panel rows can belong to any path (not just the active one)
+function applyEditFor(pathId,i,prop,value){
+  if(pathId===activeId){ applyEdit(prop,value,i); return; }
+  const p=paths.find(x=>x.id===pathId); if(!p) return;
+  pushHistory();
+  cascadeRun(p,i,prop).forEach(idx=>writeProp(p.nodes[idx],prop,value,idx));
+  refreshAll();
+}
+
+// ============================ UNDO / REDO ============================
+// Snapshot history of the editable state (paths + active path + global timeScale).
+// Selection and camera are transient and intentionally not part of history.
+const undoStack=[], redoStack=[], HISTORY_MAX=120;
+function snapshot(){
+  return JSON.stringify({ activeId, timeScale, pathSeq,
+    paths: paths.map(p=>({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
+      nodes: p.nodes.map(n=>({ d:[n.dronePos.x,n.dronePos.y,n.dronePos.z],
+        t: n.target?[n.target.x,n.target.y,n.target.z]:null, speed:n.speed, agl:n.agl })) })) });
+}
+function restoreState(str){
+  const s=JSON.parse(str);
+  activeId=s.activeId; timeScale=s.timeScale; pathSeq=s.pathSeq;
+  paths.length=0;
+  s.paths.forEach(p=>paths.push({ id:p.id, name:p.name, colour:p.colour, collapsed:p.collapsed,
+    nodes: p.nodes.map(n=>({ dronePos:new THREE.Vector3(n.d[0],n.d[1],n.d[2]),
+      target: n.t?new THREE.Vector3(n.t[0],n.t[1],n.t[2]):null, speed:n.speed, agl:n.agl })) }));
+  clearSelection(); previewing=false; scrubbing=false; setPreviewBtn();
+  refreshAll();
+}
+// Call BEFORE a mutating action so the pre-change state can be returned to.
+function commitHistory(snap){ undoStack.push(snap); if(undoStack.length>HISTORY_MAX) undoStack.shift(); redoStack.length=0; }
+function pushHistory(){ commitHistory(snapshot()); }
+function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restoreState(undoStack.pop()); }
+function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restoreState(redoStack.pop()); }
 
 // ============================ PANEL ============================
 const pathScroll=$('pathScroll');
@@ -890,7 +1089,7 @@ function renderPanel(){
     const sw=document.createElement('span'); sw.className='swatch'; sw.style.background='#'+p.colour.toString(16).padStart(6,'0');
     const name=document.createElement('input'); name.className='pathName'; name.value=p.name;
     name.onpointerdown=e=>e.stopPropagation();
-    name.onchange=()=>{ p.name=name.value||p.name; refreshPrompt(); };
+    name.onchange=()=>{ if(name.value && name.value!==p.name){ pushHistory(); p.name=name.value; } refreshPrompt(); };
     name.onkeydown=e=>{ if(e.key==='Enter') name.blur(); };
     const meta=document.createElement('span'); meta.className='pathMeta'; meta.textContent=p.nodes.length+' wp';
     const del=document.createElement('button'); del.className='iconBtn del'; del.textContent='🗑'; del.title='Delete flight path';
@@ -902,32 +1101,38 @@ function renderPanel(){
     const list=document.createElement('div'); list.className='wpList';
     if(!p.nodes.length){ const e=document.createElement('div'); e.className='wp empty'; e.textContent='No waypoints'; list.appendChild(e); }
     p.nodes.forEach((n,i)=>{
-      const wp=document.createElement('div'); wp.className='wp'; wp.dataset.idx=i; wp.dataset.path=p.id;
+      const sel = p.id===activeId && (i===selectedNode || selection.has(i));
+      const wp=document.createElement('div'); wp.className='wp'+(sel?' selected':''); wp.dataset.idx=i; wp.dataset.path=p.id;
       const top=document.createElement('div'); top.className='wpTop';
       const grip=document.createElement('span'); grip.className='grip'; grip.textContent='⠿';
-      const idx=document.createElement('span'); idx.className='idx'; idx.textContent=String(i+1).padStart(2,'0');
-      const co=document.createElement('span'); co.className='co';
-      co.innerHTML=`D ${n.dronePos.x.toFixed(0)}, ${(-n.dronePos.z).toFixed(0)}<br><span class="tgt">T</span> ${n.target.x.toFixed(0)}, ${(-n.target.z).toFixed(0)}`;
+      const idx=document.createElement('span'); idx.className='idx'; idx.textContent='Waypoint '+String(i+1).padStart(2,'0');
+      const sp=document.createElement('span'); sp.className='co';   // flex spacer keeps × on the right
       const rm=document.createElement('button'); rm.className='iconBtn del'; rm.textContent='×'; rm.title='Remove waypoint';
       rm.onpointerdown=e=>e.stopPropagation();
       rm.onclick=e=>{ e.stopPropagation(); requestRemoveNode(p.id,i); };
-      top.append(grip,idx,co,rm);
+      top.append(grip,idx,sp,rm);
 
       const ctl=document.createElement('div'); ctl.className='wpCtl';
       const spd=document.createElement('span'); spd.className='spd';
-      spd.title='Speed of the leg arriving at this waypoint (click to change)';
+      spd.title='Speed of the leg arriving at this waypoint — click to cycle, drag to change';
       spd.innerHTML=speedChevrons(n.speed);
-      spd.onpointerdown=e=>e.stopPropagation();
-      spd.onclick=e=>{ e.stopPropagation(); cycleSpeed(n); refreshAll(); };
+      attachSpeedScrub(spd, p.id, i, 'panel');
       const hgt=document.createElement('span'); hgt.className='hgt'; hgt.title='Height above ground (20 m steps)';
       const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
       const hv=document.createElement('span'); hv.className='hv'; hv.textContent=n.agl+' m';
       const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
       hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
-      hm.onclick=e=>{ e.stopPropagation(); setNodeHeight(n,n.agl-HEIGHT_STEP); renderPanel(); };
-      hp.onclick=e=>{ e.stopPropagation(); setNodeHeight(n,n.agl+HEIGHT_STEP); renderPanel(); };
+      hm.onclick=e=>{ e.stopPropagation(); applyEditFor(p.id,i,'agl',n.agl-HEIGHT_STEP); };
+      hp.onclick=e=>{ e.stopPropagation(); applyEditFor(p.id,i,'agl',n.agl+HEIGHT_STEP); };
       hgt.append(hm,hv,hp);
-      ctl.append(spd,hgt);
+      attachHeightScrub(hv, p.id, i, 'panel');
+      const look=document.createElement('span'); look.className='lookPill'+(n.target?' fixed':'');
+      look.textContent = n.target ? 'Looking at point' : 'Looking forward';
+      look.title='Toggle look-at: forward along path ↔ fixed point';
+      look.onpointerdown=e=>e.stopPropagation();
+      look.onclick=e=>{ e.stopPropagation(); if(p.id!==activeId) selectPath(p.id);
+        const nn=p.nodes[i]; applyEdit('lookat', nn.target?'forward':'explicit', i); };
+      ctl.append(spd,hgt,look);
 
       wp.append(top,ctl);
       if(p.id===activeId) attachReorder(wp,p,i);
@@ -961,9 +1166,13 @@ function attachReorder(el,p,index){
   const end=e=>{
     if(!drag) return;
     drag.rows.forEach(r=>r.classList.remove('drop-before','drop-after','dragging'));
-    let {from,to}=drag; if(to>from) to--;
-    if(to!==from && to>=0 && to<drag.p.nodes.length){
-      const [n]=drag.p.nodes.splice(from,1); drag.p.nodes.splice(to,0,n);
+    let {from,to}=drag; const p=drag.p; if(to>from) to--;
+    if(to!==from && to>=0 && to<p.nodes.length){
+      pushHistory();
+      const [n]=p.nodes.splice(from,1); p.nodes.splice(to,0,n);
+      if(p.id===activeId) clearSelection();   // indices shifted; drop selection
+    } else if(p.id===activeId){
+      selectNode(index, !!(e && e.shiftKey));  // plain click selects · shift-click toggles in the set
     }
     drag=null; refreshAll();
   };
@@ -973,74 +1182,74 @@ function attachReorder(el,p,index){
 
 // ============================ PATH / NODE OPS ============================
 function selectPath(id){
-  if(state!=='IDLE' && pending){ /* drop unfinished pending when switching */ }
-  activeId=id; pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
+  activeId=id; previewing=false; setPreviewBtn();
+  clearSelection();
   const a=active();
-  state = a && a.nodes.length ? 'IDLE' : 'PLACE_FIRST_DRONE';
   if(a && a.nodes.length){ // frame it
     const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length);
     camGoal.set(c.x,0,c.z);
   }
-  $('pipFrame').style.display = state==='IDLE' ? 'none' : 'block';
   refreshAll();
 }
 function addPath(){
-  const p=newPath(); activeId=p.id; pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
-  state='PLACE_FIRST_DRONE'; $('pipFrame').style.display='none'; refreshAll();
+  const p=newPath(); activeId=p.id; previewing=false; setPreviewBtn();
+  clearSelection(); refreshAll();
 }
-function startAppend(){
-  const a=active(); if(!a){ addPath(); return; }
-  moveToolActive=false; previewing=false; setPreviewBtn();
-  if(a.nodes.length){
-    const last=a.nodes[a.nodes.length-1];
-    pending={ dronePos:last.dronePos.clone(), target:last.target.clone(), agl:DEFAULT_AGL };
-    state='PLACE_DRONE'; $('pipFrame').style.display='block';
-  } else { state='PLACE_FIRST_DRONE'; }
-  refreshAll();
-}
-function commitNode(){
-  active().nodes.push({dronePos:pending.dronePos.clone(), target:pending.target.clone(), speed:2, agl:pending.agl||DEFAULT_AGL});
-}
-function handlePlaceClick(){
-  if(!mouseValid || gizmoOn()) return;
-  if(state==='IDLE') return;                 // not in a placing mode
+// Place a new waypoint at the cursor. It inherits the previous waypoint's speed,
+// height and look-at so the run continues until you deliberately change it; the
+// very first waypoint falls back to the defaults (120 m, speed 2, look forward).
+function appendNode(){
+  const a=active(); if(!a||!mouseValid) return;
+  pushHistory();
   const gy=mouseGround.y;
-  if(state==='PLACE_FIRST_DRONE'){
-    pending={ dronePos:new THREE.Vector3(mouseGround.x,gy+DEFAULT_AGL,mouseGround.z), agl:DEFAULT_AGL,
-              target:new THREE.Vector3(mouseGround.x,terrainHeightAt(mouseGround.x,mouseGround.z+150),mouseGround.z+150) };
-    overlay.visible=true; $('pipFrame').style.display='block'; state='PLACE_TARGET';
-  } else if(state==='PLACE_TARGET'){
-    pending.target.set(mouseGround.x,gy,mouseGround.z); commitNode();
-    pending={ dronePos:new THREE.Vector3(mouseGround.x,gy+DEFAULT_AGL,mouseGround.z), agl:DEFAULT_AGL,
-              target:active().nodes[active().nodes.length-1].target.clone() };
-    state='PLACE_DRONE';
-  } else if(state==='PLACE_DRONE'){
-    pending.dronePos.set(mouseGround.x,gy+pending.agl,mouseGround.z); state='PLACE_TARGET';
-  }
+  const prev=a.nodes[a.nodes.length-1];
+  const agl  = prev ? prev.agl  : DEFAULT_AGL;
+  const speed= prev ? prev.speed: 2;
+  const target = prev && prev.target ? prev.target.clone() : null;
+  a.nodes.push({ dronePos:new THREE.Vector3(mouseGround.x,gy+agl,mouseGround.z), target, speed, agl });
+  selectNode(a.nodes.length-1,false);
   refreshAll();
 }
-
-// end / exit
-function requestEndPath(){
-  if(state==='IDLE' && !moveToolActive){ return; }   // nothing active to end
-  showModal({ title:'Finish this path?',
-    body:'Your flight path saves automatically. Reopen it any time to add waypoints or make changes.',
-    buttons:[ {label:'Keep editing', kind:'ghost'},
-              {label:'Finish', kind:'primary', onClick:exitToSaved} ] });
+// Unified map click: hit a waypoint -> select it; empty map -> append a new one.
+function handleMapClick(e){
+  const a=active(); if(!a||!mouseValid) return;
+  const additive = !!(e && e.shiftKey);
+  const hit=pickNodeAt(e.clientX,e.clientY);
+  if(hit>=0){ selectNode(hit, additive); refreshAll(); return; }
+  if(additive) return;          // shift on empty space is reserved for box-select
+  appendNode();
 }
-function exitToSaved(){
-  pending=null; moveToolActive=false; previewing=false; setPreviewBtn();
-  state='IDLE'; ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false;
-  $('pipFrame').style.display='none';
-  const a=active(); if(a && a.nodes.length<2){ /* keep, just not flyable */ }
-  refreshAll();
+// nearest waypoint to a screen point, or -1 if none within the pick radius
+function pickNodeAt(clientX,clientY){
+  const a=active(); if(!a) return -1;
+  const v=new THREE.Vector3(); let best=-1, bestD=20*20;
+  a.nodes.forEach((n,i)=>{
+    v.copy(n.dronePos).project(mapCam); if(v.z>1) return;
+    const sx=(v.x*0.5+0.5)*innerWidth, sy=(-v.y*0.5+0.5)*innerHeight;
+    const d=(sx-clientX)**2+(sy-clientY)**2;
+    if(d<bestD){ bestD=d; best=i; }
+  });
+  return best;
 }
 function requestRemoveNode(pathId,i){
   showModal({ title:'Remove this waypoint?',
     body:'Are you sure you want to remove this waypoint? Any others in the flight path will remain.', warn:true,
     buttons:[ {label:'Keep waypoint', kind:'ghost'},
               {label:'Remove waypoint', kind:'danger', onClick:()=>{
-                const p=paths.find(x=>x.id===pathId); if(p){ p.nodes.splice(i,1); } refreshAll(); }} ] });
+                const p=paths.find(x=>x.id===pathId); if(p){ pushHistory(); p.nodes.splice(i,1); }
+                if(pathId===activeId) clearSelection(); refreshAll(); }} ] });
+}
+// Confirm-and-remove the current selection (one or many), used by the Delete key.
+function requestRemoveSelected(){
+  const a=active(); if(!a||selectedNode<0) return;
+  const idxs=(selection.size ? [...selection] : [selectedNode]).sort((x,y)=>y-x);
+  const many=idxs.length>1;
+  showModal({ title: many?`Remove ${idxs.length} waypoints?`:'Remove this waypoint?',
+    body: many?'Remove the selected waypoints? The rest of the flight path will remain.'
+              :'Are you sure you want to remove this waypoint? Any others in the flight path will remain.', warn:true,
+    buttons:[ {label: many?'Keep waypoints':'Keep waypoint', kind:'ghost'},
+              {label: many?'Remove waypoints':'Remove waypoint', kind:'danger', onClick:()=>{
+                pushHistory(); idxs.forEach(idx=>a.nodes.splice(idx,1)); clearSelection(); refreshAll(); }} ] });
 }
 function requestDeletePath(id){
   const p=paths.find(x=>x.id===id); if(!p) return;
@@ -1048,10 +1257,9 @@ function requestDeletePath(id){
     body:`Delete "${p.name}" and all of its waypoints? This cannot be undone.`, warn:true,
     buttons:[ {label:'Keep path', kind:'ghost'},
               {label:'Delete path', kind:'danger', onClick:()=>{
+                pushHistory();
                 const idx=paths.findIndex(x=>x.id===id); paths.splice(idx,1);
-                if(activeId===id){ activeId=paths.length?paths[Math.max(0,idx-1)].id:null;
-                  pending=null; const a=active(); state=a&&a.nodes.length?'IDLE':(a?'PLACE_FIRST_DRONE':'IDLE');
-                  $('pipFrame').style.display='none'; }
+                if(activeId===id){ activeId=paths.length?paths[Math.max(0,idx-1)].id:null; clearSelection(); }
                 refreshAll(); }} ] });
 }
 
@@ -1060,44 +1268,64 @@ const gizmoLayer=$('gizmoLayer');
 let gizmoEls=[];   // {el, handle, node}
 function buildGizmos(){
   gizmoLayer.innerHTML=''; gizmoEls=[];
-  const a=active(); if(!gizmoOn()||!a||!a.nodes.length||state==='PLACE_FIRST_DRONE') return;
+  const a=active(); if(!a||!a.nodes.length) return;
+  // Full controls (arrows, speed, height, trash, look-at) on the primary selected
+  // node only; every other node gets a lightweight square handle you can click to
+  // select or drag to move. The selected node's target shows a handle when fixed.
   a.nodes.forEach((n,i)=>{
-    gizmoEls.push(makeGizmo('drone',i,true));
-    gizmoEls.push(makeGizmo('target',i,false));
+    const isSel = i===selectedNode || selection.has(i);
+    const full  = i===selectedNode;
+    gizmoEls.push(makeGizmo('drone',i,full,isSel));
+    if(full && n.target) gizmoEls.push(makeGizmo('target',i,false,true));
   });
 }
-function makeGizmo(handle,nodeIndex,withMinus){
-  const g=document.createElement('div'); g.className='gizmo';
+function makeGizmo(handle,nodeIndex,full,selected){
+  const g=document.createElement('div'); g.className='gizmo'+(selected?' sel':'');
   const sq=document.createElement('div'); sq.className='gz-sq';
-  const ax=document.createElement('div'); ax.className='gz-x';
-  const ay=document.createElement('div'); ay.className='gz-y';
   const lab=document.createElement('div'); lab.className='gz-lab'; lab.style.left='10px'; lab.style.top='8px';
   lab.textContent=(handle==='drone'?'WP ':'T ')+(nodeIndex+1);
-  g.append(ay,ax,sq,lab);
-  if(withMinus){
-    const tr=document.createElement('div'); tr.className='gz-trash'; tr.textContent='🗑'; tr.title='Delete waypoint';
-    tr.onpointerdown=e=>e.stopPropagation();
-    tr.onclick=e=>{ e.stopPropagation(); requestRemoveNode(active().id,nodeIndex); };
-    g.appendChild(tr);
-    const sp=document.createElement('div'); sp.className='gz-spd'; sp.title='Speed to this waypoint (click to cycle)';
-    sp.innerHTML=speedChevrons(active().nodes[nodeIndex].speed);
-    sp.onpointerdown=e=>e.stopPropagation();
-    sp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; cycleSpeed(n);
-      sp.innerHTML=speedChevrons(n.speed); rebuildPath(); renderPanel(); };
-    g.appendChild(sp);
-    const hg=document.createElement('div'); hg.className='gz-hgt'; hg.title='Height above ground (20 m steps)';
-    const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
-    const hv=document.createElement('span'); hv.className='hv'; hv.textContent=active().nodes[nodeIndex].agl+' m';
-    const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
-    hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
-    hm.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; setNodeHeight(n,n.agl-HEIGHT_STEP); renderPanel(); };
-    hp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; setNodeHeight(n,n.agl+HEIGHT_STEP); renderPanel(); };
-    hg.append(hm,hv,hp); g.appendChild(hg);
-    g._hval=hv;
+  g.append(sq,lab);
+  if(full){
+    const ax=document.createElement('div'); ax.className='gz-x';
+    const ay=document.createElement('div'); ay.className='gz-y';
+    g.append(ay,ax);
+    ax.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'x'));
+    ay.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'z'));
+    if(handle==='drone'){
+      const tr=document.createElement('div'); tr.className='gz-trash'; tr.textContent='🗑'; tr.title='Delete waypoint';
+      tr.onpointerdown=e=>e.stopPropagation();
+      tr.onclick=e=>{ e.stopPropagation(); requestRemoveNode(active().id,nodeIndex); };
+      g.appendChild(tr);
+      const sp=document.createElement('div'); sp.className='gz-spd'; sp.title='Speed — click to cycle, drag to change';
+      sp.innerHTML=speedChevrons(active().nodes[nodeIndex].speed);
+      attachSpeedScrub(sp, active().id, nodeIndex, 'gizmo');
+      g.appendChild(sp);
+      const hg=document.createElement('div'); hg.className='gz-hgt'; hg.title='Height above ground (20 m steps)';
+      const hm=document.createElement('button'); hm.className='hb'; hm.textContent='−';
+      const hv=document.createElement('span'); hv.className='hv'; hv.textContent=active().nodes[nodeIndex].agl+' m';
+      const hp=document.createElement('button'); hp.className='hb'; hp.textContent='+';
+      hm.onpointerdown=hp.onpointerdown=e=>e.stopPropagation();
+      hm.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('agl',n.agl-HEIGHT_STEP,nodeIndex); };
+      hp.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('agl',n.agl+HEIGHT_STEP,nodeIndex); };
+      hg.append(hm,hv,hp); g.appendChild(hg);
+      g._hval=hv;
+      attachHeightScrub(hv, active().id, nodeIndex, 'gizmo');
+      const nn=active().nodes[nodeIndex];
+      const lk=document.createElement('div'); lk.className='gz-look'+(nn.target?' on':'');
+      lk.textContent = '◎';
+      lk.title = nn.target ? 'Look-at: fixed target (click for forward)' : 'Look-at: forward along path (click to set a fixed target)';
+      lk.onpointerdown=e=>e.stopPropagation();
+      lk.onclick=e=>{ e.stopPropagation(); const n=active().nodes[nodeIndex]; applyEdit('lookat', n.target?'forward':'explicit', nodeIndex); };
+      g.appendChild(lk);
+    }
   }
-  sq.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'xy'));
-  ax.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'x'));
-  ay.addEventListener('pointerdown',e=>startGizmoDrag(e,handle,nodeIndex,'z'));
+  sq.addEventListener('pointerdown',e=>{
+    if(handle==='drone'){
+      if(e.shiftKey){ e.stopPropagation(); e.preventDefault(); selectNode(nodeIndex,true); refreshAll(); return; }
+      if(nodeIndex!==selectedNode){ selectNode(nodeIndex,false); reflectSelection(); }
+    }
+    startGizmoDrag(e,handle,nodeIndex,'xy');
+  });
   gizmoLayer.appendChild(g);
   return {el:g, handle, node:nodeIndex, hval:g._hval||null};
 }
@@ -1109,10 +1337,11 @@ function syncGizmos(){
   const v=new THREE.Vector3();
   gizmoEls.forEach(gz=>{
     const n=a.nodes[gz.node]; if(!n){ gz.el.style.display='none'; return; }
-    v.copy(handleVec(gz.handle,n)).project(mapCam);
+    const hv3=handleVec(gz.handle,n); if(!hv3){ gz.el.style.display='none'; return; }
+    v.copy(hv3).project(mapCam);
     if(v.z>1){ gz.el.style.display='none'; return; }
     const sx=(v.x*0.5+0.5)*innerWidth, sy=(-v.y*0.5+0.5)*innerHeight;
-    // don't draw top-down gizmos over the preview window (the 3D view owns them there)
+    // keep handles off the preview window so they don't overlap the camera view
     if(pr && sx>pr.left-45 && sx<pr.right+45 && sy>pr.top-45 && sy<pr.bottom+45){ gz.el.style.display='none'; return; }
     gz.el.style.display='block';
     gz.el.style.left=sx+'px'; gz.el.style.top=sy+'px';
@@ -1122,7 +1351,7 @@ function syncGizmos(){
 let gizmoDrag=null;
 function startGizmoDrag(e,handle,nodeIndex,axis){
   e.stopPropagation(); e.preventDefault();
-  gizmoDrag={handle,nodeIndex,axis,lastX:e.clientX,lastY:e.clientY};
+  gizmoDrag={handle,nodeIndex,axis,lastX:e.clientX,lastY:e.clientY,snap:snapshot(),moved:false};
   e.target.setPointerCapture(e.pointerId);
 }
 window.addEventListener('pointermove',e=>{
@@ -1132,21 +1361,21 @@ window.addEventListener('pointermove',e=>{
   const k=pxToWorld();
   const dx=(e.clientX-gizmoDrag.lastX)*k, dz=(e.clientY-gizmoDrag.lastY)*k;
   gizmoDrag.lastX=e.clientX; gizmoDrag.lastY=e.clientY;
+  if(dx||dz) gizmoDrag.moved=true;
   const h=handleVec(gizmoDrag.handle,n);
   if(gizmoDrag.axis==='x'||gizmoDrag.axis==='xy') h.x+=dx;
   if(gizmoDrag.axis==='z'||gizmoDrag.axis==='xy') h.z+=dz;
   const clamp=WORLD/2-10; h.x=THREE.MathUtils.clamp(h.x,-clamp,clamp); h.z=THREE.MathUtils.clamp(h.z,-clamp,clamp);
   // re-drape height (drone keeps its own AGL above the new ground point)
   h.y = gizmoDrag.handle==='drone' ? terrainHeightAt(h.x,h.z)+n.agl : terrainHeightAt(h.x,h.z);
-  rebuildCommitted(); rebuildPath();   // keep gizmo DOM (count unchanged)
+  // dragging a look-at handle snaps onto a nearby existing look-at point (same as right-drag)
+  if(gizmoDrag.handle==='target'){
+    const snap=snapToExistingTarget(new Set([gizmoDrag.nodeIndex]), e.clientX, e.clientY);
+    if(snap) n.target.copy(snap);
+  }
+  rebuildPath(); rebuildCommitted();   // path first so tangents stay current; keep gizmo DOM
 });
-window.addEventListener('pointerup',()=>{ if(gizmoDrag){ gizmoDrag=null; renderPanel(); } });
-
-function setNodeHeight(n,agl){
-  n.agl=Math.max(HEIGHT_MIN, Math.min(HEIGHT_MAX, agl));
-  n.dronePos.y=terrainHeightAt(n.dronePos.x,n.dronePos.z)+n.agl;
-  rebuildCommitted(); rebuildPath();
-}
+window.addEventListener('pointerup',()=>{ if(gizmoDrag){ if(gizmoDrag.moved) commitHistory(gizmoDrag.snap); gizmoDrag=null; refreshAll(); } });
 
 // ============================ MODAL ============================
 const modalWrap=$('modalWrap'), modalCard=$('modalCard');
@@ -1186,8 +1415,6 @@ function updateAim(){
   const gy=mouseGround.y;
   $('roX').textContent=mouseGround.x.toFixed(0); $('roZ').textContent=(-mouseGround.z).toFixed(0);
   $('roElev').textContent=gy.toFixed(0); $('roDrone').textContent=(gy+DEFAULT_AGL).toFixed(0);
-  if(state==='PLACE_TARGET'&&pending){ pending.target.set(mouseGround.x,gy,mouseGround.z); rebuildPath(); }
-  else if(state==='PLACE_DRONE'&&pending){ pending.dronePos.set(mouseGround.x,gy+(pending.agl||DEFAULT_AGL),mouseGround.z); rebuildPath(); }
 }
 function pxToWorld(){ return (2*camHeight*Math.tan(THREE.MathUtils.degToRad(mapCam.fov/2)))/innerHeight; }
 function panBy(dx,dy){ const k=pxToWorld(),h=WORLD/2-10;
@@ -1196,7 +1423,7 @@ function panBy(dx,dy){ const k=pxToWorld(),h=WORLD/2-10;
 function recentreToMouse(){ if(mouseValid) camGoal.set(mouseGround.x,0,mouseGround.z); else recentreView(); }
 function recentreView(){
   const a=active();
-  if(pending&&state!=='IDLE'){ camGoal.set(pending.dronePos.x,0,pending.dronePos.z); }
+  if(a && selectedNode>=0 && a.nodes[selectedNode]){ const n=a.nodes[selectedNode]; camGoal.set(n.dronePos.x,0,n.dronePos.z); }
   else if(a&&a.nodes.length){ const c=new THREE.Vector3(); a.nodes.forEach(n=>c.add(n.dronePos)); c.divideScalar(a.nodes.length); camGoal.set(c.x,0,c.z); }
   else camGoal.set(0,0,0);
 }
@@ -1207,136 +1434,242 @@ canvas.addEventListener('mousemove',e=>{
   mouseValid=groundPointFromEvent(e); updateAim();
 });
 canvas.addEventListener('mousedown',e=>{
-  if(e.button===0) handlePlaceClick();
+  if(e.button===2){ e.preventDefault(); startLookatDrag(e); return; }   // right-press-drag = aim look-at
+  if(e.button===0){
+    if(e.shiftKey){ startBoxOrToggle(e); return; }
+    const hit=pickNodeAt(e.clientX,e.clientY);
+    if(hit>=0){ selectNode(hit,false); refreshAll(); }                  // select existing waypoint
+    else if(active() && mouseValid){ startPlacement(e); }               // press-drag-release to place
+  }
   else if(e.button===1){ e.preventDefault(); mousePanning=true; panLast={x:e.clientX,y:e.clientY}; }
 });
 window.addEventListener('mouseup',e=>{ if(e.button===1) mousePanning=false; });
-canvas.addEventListener('contextmenu',e=>{ e.preventDefault(); if(!modalOpen) requestEndPath(); });
+canvas.addEventListener('contextmenu',e=>e.preventDefault());   // right-button handled in mousedown
+
+// Press-drag-release placement: the new waypoint follows the cursor and previews
+// live until you let go, instead of snapping to the first click point.
+function startPlacement(e){
+  mouseValid=groundPointFromEvent(e); if(!mouseValid) return;
+  appendNode();                       // pushes history, adds + selects the node at the cursor
+  const idx=selectedNode;
+  const mv=ev=>{ const a=active(), n=a&&a.nodes[idx]; if(!n) return;
+    mouseValid=groundPointFromEvent(ev);
+    n.dronePos.set(mouseGround.x, terrainHeightAt(mouseGround.x,mouseGround.z)+n.agl, mouseGround.z);
+    rebuildPath(); rebuildCommitted(); refreshPrompt(); };
+  const up=()=>{ window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); refreshAll(); };
+  window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+}
+
+// Right-press-drag: aim the selected waypoint's look-at, previewing until release.
+// Snaps onto a nearby existing look-at point so several waypoints can share the
+// exact same target (which then cascade together).
+function startLookatDrag(e){
+  if(modalOpen) return;
+  const a=active();
+  if(!a || selectedNode<0){ clearSelection(); refreshAll(); return; }   // nothing selected -> deselect
+  pushHistory();
+  const targets = selection.size ? [...selection] : [selectedNode];
+  const exclude = new Set(targets);
+  const apply=ev=>{ mouseValid=groundPointFromEvent(ev);
+    const snap = snapToExistingTarget(exclude, ev.clientX, ev.clientY);
+    const t = snap || new THREE.Vector3(mouseGround.x,mouseGround.y,mouseGround.z);
+    targets.forEach(idx=>{ const n=a.nodes[idx]; if(n) n.target=t.clone(); });
+    rebuildPath(); rebuildCommitted(); refreshPrompt(); };
+  apply(e);
+  const mv=ev=>apply(ev);
+  const up=ev=>{ if(ev.button!==2) return; window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); refreshAll(); };
+  window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+}
+// nearest existing fixed look-at point (in screen space) to snap onto, or null
+function snapToExistingTarget(excludeSet, sx, sy){
+  const a=active(); if(!a) return null;
+  const v=new THREE.Vector3(); let best=null, bestD=22*22;
+  a.nodes.forEach((n,i)=>{ if(!n.target || excludeSet.has(i)) return;
+    v.copy(n.target).project(mapCam); if(v.z>1) return;
+    const px=(v.x*0.5+0.5)*innerWidth, py=(-v.y*0.5+0.5)*innerHeight;
+    const d=(px-sx)**2+(py-sy)**2; if(d<bestD){ bestD=d; best=n.target; } });
+  return best ? best.clone() : null;
+}
+
+// shift+click a node toggles it in the selection; shift+drag empty draws a box
+function startBoxOrToggle(e){
+  const hit=pickNodeAt(e.clientX,e.clientY);
+  if(hit>=0){ selectNode(hit,true); refreshAll(); return; }
+  beginBoxSelect(e);
+}
+let boxSel=null;
+function beginBoxSelect(e){
+  boxSel={x0:e.clientX,y0:e.clientY,cur:null};
+  const d=document.createElement('div'); d.id='marquee';
+  d.style.cssText='position:fixed;z-index:30;border:1px solid #3da9ff;background:rgba(61,169,255,.12);pointer-events:none;';
+  document.body.appendChild(d); boxSel.el=d; updateMarquee(e.clientX,e.clientY);
+  const mv=ev=>updateMarquee(ev.clientX,ev.clientY);
+  const up=()=>{ window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); finishBoxSelect(); };
+  window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+}
+function updateMarquee(x,y){
+  if(!boxSel) return;
+  const l=Math.min(x,boxSel.x0), t=Math.min(y,boxSel.y0), w=Math.abs(x-boxSel.x0), h=Math.abs(y-boxSel.y0);
+  boxSel.cur={l,t,r:l+w,b:t+h};
+  Object.assign(boxSel.el.style,{left:l+'px',top:t+'px',width:w+'px',height:h+'px'});
+}
+function finishBoxSelect(){
+  if(!boxSel) return;
+  const a=active(), box=boxSel.cur;
+  if(a && box && (box.r-box.l>3 || box.b-box.t>3)){
+    selMode='multi'; const v=new THREE.Vector3();
+    a.nodes.forEach((n,i)=>{ v.copy(n.dronePos).project(mapCam); if(v.z>1) return;
+      const sx=(v.x*0.5+0.5)*innerWidth, sy=(-v.y*0.5+0.5)*innerHeight;
+      if(sx>=box.l&&sx<=box.r&&sy>=box.t&&sy<=box.b){ selection.add(i); selectedNode=i; } });
+  }
+  if(boxSel.el) boxSel.el.remove();
+  boxSel=null; refreshAll();
+}
 canvas.addEventListener('wheel',e=>{ e.preventDefault();
   camHeight=THREE.MathUtils.clamp(camHeight*Math.exp(e.deltaY*0.001),250,5200); },{passive:false});
 
-// touch
-let touchMode=null, multiTouched=false, tapStart=null, gMid=null, gDist=0;
+// touch — single finger places (drag to position, lift to commit) or selects a node; two fingers pan/zoom
+let touchMode=null, multiTouched=false, gMid=null, gDist=0, touchPlaceIdx=-1;
 const tMid=ts=>({x:(ts[0].clientX+ts[1].clientX)/2,y:(ts[0].clientY+ts[1].clientY)/2});
 const tDist=ts=>Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);
 canvas.addEventListener('touchstart',e=>{ e.preventDefault();
-  if(e.touches.length===1&&!multiTouched){ touchMode='aim'; const t=e.touches[0];
-    tapStart={x:t.clientX,y:t.clientY,time:performance.now()}; mouseValid=groundPointFromEvent(t); updateAim(); }
-  else if(e.touches.length>=2){ touchMode='gesture'; multiTouched=true; tapStart=null; gMid=tMid(e.touches); gDist=tDist(e.touches); }
+  if(e.touches.length===1&&!multiTouched){ const t=e.touches[0];
+    mouseValid=groundPointFromEvent(t); updateAim();
+    const hit=pickNodeAt(t.clientX,t.clientY);
+    if(hit>=0){ touchMode='aim'; selectNode(hit,false); refreshAll(); }
+    else if(active()&&mouseValid){ touchMode='place'; appendNode(); touchPlaceIdx=selectedNode; }
+    else touchMode='aim';
+  }
+  else if(e.touches.length>=2){ touchMode='gesture'; multiTouched=true; gMid=tMid(e.touches); gDist=tDist(e.touches); }
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{ e.preventDefault();
   if(touchMode==='gesture'&&e.touches.length>=2){ const mid=tMid(e.touches),d=tDist(e.touches);
     panBy(mid.x-gMid.x,mid.y-gMid.y); if(d>0&&gDist>0) camHeight=THREE.MathUtils.clamp(camHeight*gDist/d,250,5200);
     gMid=mid; gDist=d; }
+  else if(touchMode==='place'&&e.touches.length===1){ const t=e.touches[0]; mouseValid=groundPointFromEvent(t);
+    const a=active(), n=a&&a.nodes[touchPlaceIdx];
+    if(n){ n.dronePos.set(mouseGround.x,terrainHeightAt(mouseGround.x,mouseGround.z)+n.agl,mouseGround.z);
+      rebuildPath(); rebuildCommitted(); refreshPrompt(); } }
   else if(touchMode==='aim'&&e.touches.length===1){ mouseValid=groundPointFromEvent(e.touches[0]); updateAim(); }
 },{passive:false});
 canvas.addEventListener('touchend',e=>{ e.preventDefault();
   if(e.touches.length===0){
-    if(touchMode==='aim'&&!multiTouched&&tapStart&&e.changedTouches.length){
-      const t=e.changedTouches[0], moved=Math.hypot(t.clientX-tapStart.x,t.clientY-tapStart.y), held=performance.now()-tapStart.time;
-      if(moved<14&&held<450){ mouseValid=groundPointFromEvent(t); handlePlaceClick(); } }
-    touchMode=null; multiTouched=false; tapStart=null; }
+    if(touchMode==='place') refreshAll();
+    touchMode=null; multiTouched=false; touchPlaceIdx=-1; }
 },{passive:false});
-canvas.addEventListener('touchcancel',()=>{ touchMode=null; multiTouched=false; tapStart=null; });
+canvas.addEventListener('touchcancel',()=>{ if(touchMode==='place') refreshAll(); touchMode=null; multiTouched=false; touchPlaceIdx=-1; });
 
 window.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ if(modalOpen) closeModal(); else requestEndPath(); }
-  if((e.key==='i'||e.key==='I')&&!e.repeat) recentreToMouse();
-  if(e.key==='Control'&&!ctrlHeld){ ctrlHeld=true; buildGizmos(); }
+  if(e.key==='Escape'){ if(modalOpen) closeModal(); else { clearSelection(); refreshAll(); } return; }
+  const el=document.activeElement, typing = el && /^(INPUT|TEXTAREA)$/.test(el.tagName);
+  if(typing || modalOpen) return;                       // don't grab keys while editing text / in a modal
+  if((e.key==='i'||e.key==='I')&&!e.repeat&&!e.ctrlKey&&!e.metaKey) recentreToMouse();
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if(active() && selectedNode>=0){ e.preventDefault(); requestRemoveSelected(); }
+  }
+  if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z') && !e.shiftKey){ e.preventDefault(); undo(); return; }
+  if((e.ctrlKey||e.metaKey) && ((e.key==='y'||e.key==='Y') || (e.shiftKey && (e.key==='z'||e.key==='Z')))){ e.preventDefault(); redo(); return; }
 });
-window.addEventListener('keyup',e=>{ if(e.key==='Control'){ ctrlHeld=false; buildGizmos(); } });
 
 // preview
 function setPreviewBtn(){ const b=$('btnPreview'); b.classList.toggle('active',previewing);
-  b.textContent=previewing?'■ Stop preview':'▶ Preview flight'; $('pipState').textContent=previewing?'flying':(state==='IDLE'?'idle':'live');
-  if(!previewing){ const pc=$('pipCtl'); if(pc) pc.style.display='none'; } }
-$('btnPreview').addEventListener('click',()=>{ const a=active(); if(!a||a.nodes.length<2) return;
-  previewing=!previewing;
-  if(previewing){ previewTime=0; $('pipFrame').style.display='block'; $('pipCtl').style.display='flex'; pipShown={dest:-1,level:-1,agl:-1}; }
-  else { $('pipCtl').style.display='none'; if(state==='IDLE') $('pipFrame').style.display='none'; }
-  setPreviewBtn(); });
+  b.textContent=previewing?'■ Stop preview':'▶ Preview flight'; $('pipState').textContent=previewing?'flying':'live'; }
+$('btnPreview').addEventListener('click',playToggle);
 
-// build the height chip once; speed chip is rewritten on change
-$('pipHeight').innerHTML='<span class="lab">HEIGHT</span><button class="hb">−</button><span class="hv">120 m</span><button class="hb">+</button>';
-$('pipHeight').querySelectorAll('.hb')[0].onclick=()=>adjustDestHeight(-HEIGHT_STEP);
-$('pipHeight').querySelectorAll('.hb')[1].onclick=()=>adjustDestHeight(HEIGHT_STEP);
-function adjustDestHeight(d){ const a=active(); const dest=+$('pipCtl').dataset.dest; const n=a&&a.nodes[dest]; if(!n) return;
-  setNodeHeight(n,n.agl+d); pipShown={dest:-1,level:-1,agl:-1}; renderPanel(); buildGizmos(); }
-
-let pipShown={dest:-1,level:-1,agl:-1};
-function updatePipControls(dest){
-  const a=active(); if(!a||!a.nodes[dest]) return; const n=a.nodes[dest];
-  if(pipShown.dest===dest && pipShown.level===n.speed && pipShown.agl===n.agl) return;
-  pipShown={dest,level:n.speed,agl:n.agl};
-  $('pipCtl').dataset.dest=dest;
-  $('pipSpeed').innerHTML=`<span class="lab">SPEED → WP ${dest+1}</span><span class="spd">${speedChevrons(n.speed)}</span>`;
-  $('pipHeight').querySelector('.hv').textContent=n.agl+' m';
+// read-only speed / height label inside the preview window (no editing here)
+// Editable speed / height controls inside the preview, bound to one waypoint.
+// While flying/scrubbing this is the NEXT point the camera is heading to; while a
+// waypoint is selected it's that waypoint. Re-rendered only when its values change.
+let pipShown={dest:-1,level:-1,agl:-1,next:null};
+function setPipControls(dest,isNext){
+  const el=$('pipInfo'), a=active();
+  if(!el||!a||!a.nodes[dest]){ if(el) el.style.display='none'; pipShown={dest:-1,level:-1,agl:-1,next:null}; return; }
+  const n=a.nodes[dest];
+  el.style.display='flex';
+  if(pipShown.dest===dest && pipShown.level===n.speed && pipShown.agl===n.agl && pipShown.next===isNext) return;
+  pipShown={dest,level:n.speed,agl:n.agl,next:isNext};
+  el.innerHTML =
+    `<span class="pipHdr">Next point</span>`+
+    `<span class="pipRow">`+
+      `<span class="spd" id="pipSpd" title="Speed — click to cycle, drag to change">${speedChevrons(n.speed)}</span>`+
+      `<span class="hgt"><button class="hb" id="pipHm">−</button><span class="hv" id="pipHv" title="Drag up/down to change height">${n.agl} m</span><button class="hb" id="pipHp">+</button></span>`+
+    `</span>`;
+  attachSpeedScrub($('pipSpd'), a.id, dest, 'pip');
+  $('pipHm').onclick=()=>applyEditFor(a.id,dest,'agl',a.nodes[dest].agl-HEIGHT_STEP);
+  $('pipHp').onclick=()=>applyEditFor(a.id,dest,'agl',a.nodes[dest].agl+HEIGHT_STEP);
+  attachHeightScrub($('pipHv'), a.id, dest, 'pip');
 }
-$('pipSpeed').addEventListener('click',()=>{ const a=active(); const d=+$('pipCtl').dataset.dest;
-  if(a&&a.nodes[d]){ cycleSpeed(a.nodes[d]); pipShown={dest:-1,level:-1,agl:-1}; rebuildPath(); renderPanel(); buildGizmos(); } });
+// Which waypoints an edit on `base` affects — mirrors applyEdit: an active
+// multi-selection edits the set, otherwise the cascade run from that node.
+function editTargets(p, base, prop){
+  if(p.id===activeId && selMode==='multi' && selection.size && selection.has(base)) return [...selection];
+  return cascadeRun(p, base, prop);
+}
+// Rebuild everything except the container holding the handle being dragged, so the
+// drag isn't interrupted. `where` = 'pip' | 'gizmo' | 'panel'.
+function partialRefreshExcept(where){
+  rebuildPath(); rebuildCommitted(); renderTimeline();
+  if(where!=='panel') renderPanel();
+  if(where!=='gizmo') buildGizmos();
+}
+// Click-drag a height readout up/down to change it, relative to where you grabbed.
+// One undo per drag.
+function attachHeightScrub(hvEl, pathId, idx, where){
+  if(!hvEl) return;
+  hvEl.onpointerdown=ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const p=paths.find(x=>x.id===pathId); if(!p||!p.nodes[idx]) return;
+    pushHistory();
+    const run=editTargets(p,idx,'agl');           // group fixed once so the run stays stable
+    const startY=ev.clientY, startAgl=p.nodes[idx].agl;
+    const mv=e2=>{
+      const steps=Math.round((startY-e2.clientY)/6);   // up = higher, ~6px per 20 m step
+      const newAgl=Math.max(HEIGHT_MIN,Math.min(HEIGHT_MAX,startAgl+steps*HEIGHT_STEP));
+      if(newAgl===p.nodes[idx].agl) return;
+      run.forEach(j=>writeProp(p.nodes[j],'agl',newAgl,j));
+      partialRefreshExcept(where);
+      if(where==='pip') pipShown.agl=newAgl;        // keep animate from rebuilding the pip control
+      hvEl.textContent=newAgl+' m';
+    };
+    const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); refreshAll(); };
+    window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+  };
+}
+// Speed control: click still cycles 1→5→1; drag left/right changes the level
+// (right = faster), relative to where you grabbed. One undo per drag.
+function attachSpeedScrub(spEl, pathId, idx, where){
+  if(!spEl) return;
+  spEl.onpointerdown=ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const p=paths.find(x=>x.id===pathId); if(!p||!p.nodes[idx]) return;
+    const startX=ev.clientX, startSpeed=p.nodes[idx].speed;
+    let moved=false, didHistory=false, run=null;
+    const mv=e2=>{
+      if(Math.abs(e2.clientX-startX)>3) moved=true;
+      const steps=Math.round((e2.clientX-startX)/14);   // ~14px per level
+      const newSpeed=Math.max(1,Math.min(5,startSpeed+steps));
+      if(newSpeed===p.nodes[idx].speed) return;
+      if(!didHistory){ pushHistory(); didHistory=true; run=editTargets(p,idx,'speed'); }
+      run.forEach(j=>writeProp(p.nodes[j],'speed',newSpeed,j));
+      partialRefreshExcept(where);
+      if(where==='pip') pipShown.level=newSpeed;
+      spEl.innerHTML=speedChevrons(newSpeed);
+    };
+    const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+      if(!moved) applyEditFor(pathId, idx, 'speed', (p.nodes[idx].speed%5)+1);   // tap = cycle
+      else refreshAll();
+    };
+    window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+  };
+}
 
 // maximise / restore the camera view
 $('btnPipMax').addEventListener('click',e=>{ e.stopPropagation();
   const pf=$('pipFrame'); const max=pf.classList.toggle('max');
   $('btnPipMax').textContent = max ? '⤡' : '⤢'; $('btnPipMax').title = max ? 'Restore view' : 'Maximise view'; });
 
-// ---------- 3D editing interaction in the preview window ----------
-const pipInput=$('pipInput');
-let pipDrag=null;
-function pipRect(){ return $('pipFrame').getBoundingClientRect(); }
-function projPip(v3,r){ const p=v3.clone().project(editCam); return {x:r.left+(p.x*0.5+0.5)*r.width, y:r.top+(-p.y*0.5+0.5)*r.height}; }
-pipInput.addEventListener('pointerdown',e=>{
-  const r=pipRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-(((e.clientY-r.top)/r.height)*2-1);
-  raycaster.setFromCamera(new THREE.Vector2(nx,ny), editCam);
-  const hit=raycaster.intersectObjects(gizmo3D.children,true).find(h=>h.object.userData&&h.object.userData.axis);
-  if(hit){ const n=hit.object.userData.node; selectedNode=n;
-    pipDrag={mode:'axis',node:n,axisKey:hit.object.userData.axis,lastX:e.clientX,lastY:e.clientY,raw:active().nodes[n].agl}; }
-  else pipDrag={mode:'orbit',lastX:e.clientX,lastY:e.clientY};
-  pipInput.setPointerCapture(e.pointerId);
-});
-
-let hoverMat=null; const hoverBase=new THREE.Color();
-function setHover(obj){
-  const mat=obj?obj.material:null;
-  if(hoverMat===mat) return;
-  if(hoverMat){ hoverMat.color.copy(hoverBase); }
-  hoverMat=mat;
-  if(mat){ hoverBase.copy(mat.color); mat.color.lerp(new THREE.Color(0xffffff),0.55); }
-}
-pipInput.addEventListener('pointermove',e=>{
-  if(pipDrag){
-    const dx=e.clientX-pipDrag.lastX, dy=e.clientY-pipDrag.lastY; pipDrag.lastX=e.clientX; pipDrag.lastY=e.clientY;
-    if(pipDrag.mode==='orbit'){ editYaw-=dx*0.006; editPitch=Math.max(0.12,Math.min(1.35,editPitch-dy*0.006)); return; }
-    const a=active(); const n=a&&a.nodes[pipDrag.node]; if(!n) return;
-    const r=pipRect(), axis=AXV[pipDrag.axisKey], o=n.dronePos.clone();
-    const p0=projPip(o,r), p1=projPip(o.clone().addScaledVector(axis,100),r);
-    const sdx=p1.x-p0.x, sdy=p1.y-p0.y, slen=Math.hypot(sdx,sdy)||1;
-    const worldDelta=((dx*sdx+dy*sdy)/slen)*(100/slen);
-    if(pipDrag.axisKey==='y'){ pipDrag.raw+=worldDelta;
-      const snapped=Math.max(HEIGHT_MIN,Math.min(HEIGHT_MAX,Math.round(pipDrag.raw/HEIGHT_STEP)*HEIGHT_STEP));
-      if(snapped!==n.agl) setNodeHeight(n,snapped); }
-    else { n.dronePos.addScaledVector(axis,worldDelta); const cl=WORLD/2-10;
-      n.dronePos.x=THREE.MathUtils.clamp(n.dronePos.x,-cl,cl); n.dronePos.z=THREE.MathUtils.clamp(n.dronePos.z,-cl,cl);
-      n.dronePos.y=terrainHeightAt(n.dronePos.x,n.dronePos.z)+n.agl; rebuildCommitted(); rebuildPath(); }
-    renderPanel(); return;
-  }
-  // rollover highlight when not dragging
-  const r=pipRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-(((e.clientY-r.top)/r.height)*2-1);
-  raycaster.setFromCamera(new THREE.Vector2(nx,ny), editCam);
-  const hit=raycaster.intersectObjects(gizmo3D.children,true).find(h=>h.object.userData&&h.object.userData.axis);
-  setHover(hit?hit.object:null);
-  pipInput.style.cursor = hit ? 'pointer' : 'grab';
-});
-pipInput.addEventListener('pointerup',()=>{ pipDrag=null; setHover(null); });
-pipInput.addEventListener('pointercancel',()=>{ pipDrag=null; setHover(null); });
-pipInput.addEventListener('pointerleave',()=>{ if(!pipDrag) setHover(null); });
-
-
-$('btnMove').addEventListener('click',()=>{ moveToolActive=!moveToolActive; $('btnMove').classList.toggle('active',moveToolActive); buildGizmos(); });
-$('btnAddWp').addEventListener('click',startAppend);
-$('btnAddPath').addEventListener('click',addPath);
+$('btnAddPath').addEventListener('click',()=>{ pushHistory(); addPath(); });
 $('btnRecentre').addEventListener('click',recentreView);
-$('btnEnd').addEventListener('click',()=>{ if(!modalOpen) requestEndPath(); });
 $('btnTime').addEventListener('click',()=>{ if(!modalOpen) openTimeModal(); });
 
 function openTimeModal(){
@@ -1365,16 +1698,98 @@ function openTimeModal(){
   track.addEventListener('pointermove',e=>{ if(dragging) setFromY(e.clientY); });
   track.addEventListener('pointerup',()=>{ dragging=false; });
   $('tCancel').onclick=closeModal;
-  $('tApply').onclick=()=>{ timeScale=val/base; closeModal(); rebuildPath(); };
+  $('tApply').onclick=()=>{ pushHistory(); timeScale=val/base; closeModal(); rebuildPath(); };
   modalWrap.classList.add('show'); modalOpen=true;
 }
 
+// ============================ TIMELINE ============================
+// Bottom node bar: x = playback time, segments coloured/chevroned by speed,
+// dots select waypoints, and a draggable playhead scrubs the preview camera.
+let tlTotal=0, tlTrackW=0; const tlPad=16;
+function renderTimeline(){
+  const tl=$('timeline'); if(!tl) return;
+  const a=active();
+  tl.innerHTML='';
+  if(!a || a.nodes.length<2 || !motion){ tl.style.display='none'; tlTotal=0; return; }
+  tl.style.display='flex';
+  const N=a.nodes.length, M=motion.M, total=motion.total*timeScale; tlTotal=total;
+  const nodeTime=k=> motion.cum[Math.round(k/(N-1)*M)]*timeScale;
+
+  const play=document.createElement('button'); play.className='tlPlay'+(previewing?' playing':'');
+  play.innerHTML = previewing ? '❚❚' : '▶';
+  play.title = previewing ? 'Pause' : 'Play from the playhead / selected point';
+  play.onclick=()=>playToggle();
+  tl.appendChild(play);
+
+  const scroll=document.createElement('div'); scroll.className='tlScroll';
+  const track=document.createElement('div'); track.className='tlTrack';
+  scroll.appendChild(track); tl.appendChild(scroll);
+
+  const tbtn=document.createElement('button'); tbtn.className='tlTime';
+  tbtn.innerHTML='◷ '+fmtTime(total); tbtn.title='Total flight time — click to adjust';
+  tbtn.onclick=()=>{ if(!modalOpen) openTimeModal(); };
+  tl.appendChild(tbtn);
+
+  const cw = scroll.clientWidth || (innerWidth-160);
+  const trackW = cw; tlTrackW=trackW;            // scale to fit every waypoint inside the window
+  track.style.width=trackW+'px';
+  const X=t=> total>0 ? tlPad + (t/total)*(trackW-2*tlPad) : tlPad;
+
+  for(let i=0;i<N-1;i++){
+    const t0=nodeTime(i), t1=nodeTime(i+1), lv=a.nodes[i+1].speed;
+    const colHex='#'+speedColour(lv).toString(16).padStart(6,'0');
+    const seg=document.createElement('div'); seg.className='tlSeg';
+    seg.style.left=X(t0)+'px'; seg.style.width=Math.max(2,X(t1)-X(t0))+'px'; seg.style.background=colHex;
+    track.appendChild(seg);
+    const ch=document.createElement('div'); ch.className='tlChev';
+    ch.style.left=((X(t0)+X(t1))/2)+'px'; ch.style.color=colHex; ch.textContent='▸'.repeat(lv);
+    track.appendChild(ch);
+  }
+  for(let k=0;k<N;k++){
+    const sel=(k===selectedNode||selection.has(k));
+    const dot=document.createElement('div'); dot.className='tlDot'+(sel?' sel':'');
+    dot.style.left=X(nodeTime(k))+'px'; dot.title='Waypoint '+(k+1);
+    dot.onpointerdown=e=>e.stopPropagation();
+    dot.onclick=e=>{ e.stopPropagation(); selectNode(k, e.shiftKey);
+      const n=a.nodes[k]; camGoal.set(n.dronePos.x,0,n.dronePos.z); refreshAll(); };
+    track.appendChild(dot);
+    const num=document.createElement('div'); num.className='tlNum'; num.style.left=X(nodeTime(k))+'px'; num.textContent=k+1;
+    track.appendChild(num);
+  }
+  // when idle, park the playhead on the selected waypoint so Play starts from there
+  if(!previewing && !scrubbing && selectedNode>=0) previewTime = Math.min(nodeTime(selectedNode), total);
+  const head=document.createElement('div'); head.className='tlHead'; head.id='tlHead';
+  head.style.left=X(Math.min(previewTime,total))+'px'; track.appendChild(head);
+
+  track.addEventListener('pointerdown',e=>{
+    if(e.target.classList.contains('tlDot')) return;
+    beginScrub(e, track, trackW, total);
+  });
+}
+function beginScrub(e,track,trackW,total){
+  previewing=false; scrubbing=true; setPreviewBtn();
+  const apply=ev=>{ const r=track.getBoundingClientRect(); let f=(ev.clientX-r.left-tlPad)/(trackW-2*tlPad); f=Math.max(0,Math.min(1,f));
+    previewTime=f*total; const head=$('tlHead'); if(head) head.style.left=(tlPad+f*(trackW-2*tlPad))+'px'; };
+  apply(e);
+  const mv=ev=>apply(ev);
+  const up=()=>{ scrubbing=false; window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); };
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+}
+function updatePlayhead(t){ const head=$('tlHead'); if(head && tlTotal>0) head.style.left=(tlPad+(t/tlTotal)*(tlTrackW-2*tlPad))+'px'; }
+// Play / pause. Resumes from the current playhead, which renderTimeline parks on
+// the scrubbed position or the selected waypoint — so playback starts from there.
+function playToggle(){
+  const a=active(); if(!a||a.nodes.length<2||!motion) return;
+  previewing=!previewing; if(previewing) scrubbing=false;
+  setPreviewBtn(); renderTimeline();
+}
+
 window.addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight);
-  mapCam.aspect=innerWidth/innerHeight; mapCam.updateProjectionMatrix(); });
+  mapCam.aspect=innerWidth/innerHeight; mapCam.updateProjectionMatrix(); renderTimeline(); });
 renderer.setSize(innerWidth,innerHeight);
 
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
-$('help').innerHTML = '<span><b>L-click</b> place</span><span><b>M-drag</b> pan</span><span><b>Scroll</b> to zoom</span><span><b>Ctrl</b> to see gizmos</span><span><b>I</b> to focus</span><span><b>R-click / Esc</b> end</span>';
+$('help').innerHTML = '<span><b>Click</b> add/select</span><span><b>R-click</b> set look-at</span><span><b>Shift-click</b> multi-select</span><span><b>Shift-drag</b> box-select</span><span><b>M-drag</b> pan</span><span><b>Scroll</b> zoom</span><span><b>Esc</b> deselect</span>';
 
 // ============================ LOOP ============================
 const clock=new THREE.Clock();
@@ -1383,48 +1798,41 @@ function animate(){
   const dt=Math.min(clock.getDelta(),.05);
   camCentre.lerp(camGoal,1-Math.pow(0.0015,dt)); placeMapCam();
 
-  const creating = state==='PLACE_TARGET'||state==='PLACE_DRONE';
-  if(pending && creating){
-    ghostDrone.position.copy(pending.dronePos);
-    ghostTarget.position.set(pending.target.x,pending.target.y+2.5,pending.target.z);
-    ghostDrone.visible=ghostTarget.visible=true;
-    activeSector.visible=true; orientSector(activeSector,pending.dronePos,pending.target);
-    sightLine.visible=true;
-    sightGeo.setFromPoints([pending.dronePos,new THREE.Vector3(pending.target.x,pending.target.y+2,pending.target.z)]);
-    sightLine.computeLineDistances();
-    pipCam.position.copy(pending.dronePos); pipCam.lookAt(pending.target.x,pending.target.y,pending.target.z);
-  } else { ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false; }
-
-  if(previewing && motion){
-    const total=motion.total*timeScale;
-    previewTime=(previewTime+dt)%total;
-    const param=motionSample(previewTime);
-    pipCam.position.copy(droneCurve.getPoint(param));
-    const tg=targetAtParam(param); pipCam.lookAt(tg.x,tg.y,tg.z);
-    const a=active(), N=a.nodes.length;
-    updatePipControls(Math.min(N-1, Math.floor(param*(N-1))+1));
-  }
-
   updateArrows(dt);
-  if(gizmoOn()) syncGizmos();
+  syncGizmos();
 
-  // Decide what the preview window shows: flight, the live placement POV, or the 3D edit view.
-  // Gizmos + tumble appear whenever Ctrl is held OR Move nodes is on (same as the top-down gizmos).
+  // The preview window shows the live flight (playing or scrubbed) or the selected
+  // waypoint's point-of-view, with editable speed/height for the relevant waypoint.
   const a=active();
-  const editing = gizmoOn() && !previewing && a && a.nodes.length>0;
-  let pipCamUse=pipCam;
-  gizmo3D.visible = editing;
-  pipInput.style.pointerEvents = editing ? 'auto' : 'none';
-  if(editing){
-    selectedNode=Math.min(selectedNode, a.nodes.length-1);
-    frameEditCam(); pipCamUse=editCam;
-    updatePipControls(selectedNode);
+  let showPip=false; camMarker.visible=false;
+  if((previewing||scrubbing) && motion && droneCurve && a){
+    if(previewing){ const total=motion.total*timeScale; previewTime=(previewTime+dt)%total; }
+    const param=motionSample(previewTime);
+    const cp=droneCurve.getPoint(param); pipCam.position.copy(cp);
+    const tg=targetAtParam(param); pipCam.lookAt(tg.x,tg.y,tg.z);
+    updateCamMarker(cp,tg);
+    const N=a.nodes.length, x=Math.min(param*(N-1),N-1-1e-6), i=Math.floor(x);
+    setPipControls(Math.min(N-1,i+1), true);
+    updatePlayhead(previewTime); showPip=true;
+  } else if(selectedNode>=0 && a && a.nodes[selectedNode]){
+    const n=a.nodes[selectedNode];
+    pipCam.position.copy(n.dronePos);
+    const t=resolvedTarget(selectedNode); pipCam.lookAt(t.x,t.y,t.z);
+    setPipControls(selectedNode, false); showPip=true;
   }
-  const showPip = previewing || editing || (pending && creating);
+
+  // red sight line from the selected waypoint to its look-at location
+  if(!previewing && !scrubbing && selectedNode>=0 && a && a.nodes[selectedNode]){
+    const n=a.nodes[selectedNode], t=resolvedTarget(selectedNode);
+    lookatGeo.setFromPoints([n.dronePos.clone(), new THREE.Vector3(t.x,t.y+2,t.z)]);
+    lookatGeo.attributes.position.needsUpdate=true;
+    lookatLine.visible=true;
+  } else lookatLine.visible=false;
+
   const pf=$('pipFrame');
   pf.style.display = showPip ? 'block' : 'none';
-  $('pipCtl').style.display = (previewing || editing) ? 'flex' : 'none';
-  $('pipState').textContent = previewing ? 'flying' : (editing ? 'edit' : 'live');
+  if(!showPip){ const pi=$('pipInfo'); if(pi) pi.style.display='none'; }
+  $('pipState').textContent = previewing ? 'flying' : (scrubbing ? 'scrub' : 'live');
 
   renderer.setRenderTarget(lightRT); renderer.setClearColor(0x000000,1); renderer.clear();
   renderer.render(lightScene,lightCam); renderer.setRenderTarget(null);
@@ -1435,31 +1843,23 @@ function animate(){
   if(pf.style.display==='block'){
     const r=pf.getBoundingClientRect();
     const vx=r.left, vy=innerHeight-r.bottom, vw=r.width, vh=r.height;   // GL origin is bottom-left
-    pipCamUse.aspect=vw/vh; pipCamUse.updateProjectionMatrix();
+    pipCam.aspect=vw/vh; pipCam.updateProjectionMatrix();
     renderer.setScissorTest(true); renderer.setViewport(vx,vy,vw,vh); renderer.setScissor(vx,vy,vw,vh);
-    renderer.render(scene,pipCamUse); renderer.setScissorTest(false);
+    renderer.render(scene,pipCam); renderer.setScissorTest(false);
   }
 }
 
 // ---------- button states ----------
 function updateButtons(){
   const a=active();
-  const creating = state==='PLACE_FIRST_DRONE'||state==='PLACE_TARGET'||state==='PLACE_DRONE';
   $('btnPreview').disabled = !(a && a.nodes.length>=2);
   $('btnTime').disabled    = !(a && a.nodes.length>=2);
-  $('btnMove').disabled    = !(a && a.nodes.length>=1);
-  $('btnAddWp').disabled   = !a;
-  $('btnEnd').disabled     = !(creating || moveToolActive);
-  if($('btnMove').disabled && moveToolActive){ moveToolActive=false; $('btnMove').classList.remove('active'); buildGizmos(); }
 }
 
 // ---------- reset ----------
 function resetAll(){
-  paths.length=0; pathSeq=0; activeId=null; pending=null;
-  moveToolActive=false; ctrlHeld=false; previewing=false;
-  $('btnMove').classList.remove('active'); setPreviewBtn();
-  state='IDLE';
-  ghostDrone.visible=ghostTarget.visible=false; activeSector.visible=false; sightLine.visible=false;
+  paths.length=0; pathSeq=0; activeId=null;
+  clearSelection(); previewing=false; scrubbing=false; setPreviewBtn();
   $('pipFrame').style.display='none';
   camGoal.set(0,0,0);
   addPath();            // start fresh with one empty path
@@ -1470,14 +1870,14 @@ function resetAll(){
 function showInstructions(){
   const steps = [
     'Add a flight path with + (top right), or pick one from the list.',
-    'Left-click the map to place the drone start. It sits 120 m above the ground at that point.',
-    'Move the mouse to aim the camera, then click to set its target. The lit cone is the camera view.',
-    'Keep clicking to add waypoints. Reorder them by dragging in the list.',
-    'Hold Ctrl (or Move nodes) to see the XY gizmos and drag waypoints and targets. The minus removes a waypoint.',
-    'Scroll to zoom, middle-drag to pan, press I to focus on the cursor.',
-    'Right-click or Esc to end and save. Preview flight to fly the camera along it.'
+    'Click empty ground to drop a waypoint. It sits 120 m up and, by default, the camera looks forward along the path.',
+    'Click a waypoint to select it. Its gizmo shows speed, height, a look-at toggle and a delete button; drag the square to move it.',
+    'Use the look-at toggle to switch between “forward along path” and a fixed target you can drag — or just right-click the map to aim the selected waypoint at that spot.',
+    'Editing one waypoint cascades to its matching neighbours. Shift-click or shift-drag a box to select several and edit them together (no cascade).',
+    'The path is coloured by speed (purple slow → orange fast); the chevrons show the same. Reorder waypoints by dragging them in the list.',
+    'Scrub the timeline at the bottom to fly the camera; click its total time to retime the whole flight. Press I to focus, Esc to deselect.'
   ];
-  const keys = '<b>L-click</b> place · <b>M-drag</b> pan · <b>Scroll</b> zoom · <b>Ctrl</b> gizmos · <b>I</b> focus · <b>R-click / Esc</b> end';
+  const keys = '<b>Click</b> add/select · <b>Shift-click</b> multi · <b>Shift-drag</b> box · <b>M-drag</b> pan · <b>Scroll</b> zoom · <b>I</b> focus · <b>Esc</b> deselect';
   modalCard.className='modalCard info';
   modalCard.innerHTML =
     '<h3>Flight path authoring</h3>' +
