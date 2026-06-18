@@ -228,6 +228,7 @@
     color:var(--ink);width:20px;height:18px;border-radius:3px;font-size:11px;line-height:1;
     display:inline-flex;align-items:center;justify-content:center;margin-right:6px;}
   .pipMax:hover{border-color:var(--path-blue);color:var(--path-blue);}
+  .pipMax.active{border-color:var(--path-blue);color:var(--path-blue);background:rgba(61,169,255,.18);}
   #pipFrame.max{left:50%;top:58px;transform:translateX(-50%);width:70vw;height:calc(100vh - 150px);
     z-index:8;bottom:auto;}
 
@@ -376,7 +377,8 @@
 
 <div class="hud" id="pipFrame">
   <div class="pipLabel"><span>Camera preview</span>
-    <span class="rec"><button class="pipMax clickable" id="btnPipMax" title="Maximise view">⤢</button>
+    <span class="rec"><button class="pipMax clickable" id="btnPipReveal" title="Show the flight path and authoring overlays in the preview (or hold Ctrl)">◎</button>
+    <button class="pipMax clickable" id="btnPipMax" title="Maximise view">⤢</button>
     <span class="dot"></span><span id="pipState">live</span></span></div>
   <div id="pipInfo" style="display:none;"></div>
 </div>
@@ -812,6 +814,8 @@ const selection=new Set();   // explicitly multi-selected node indices
 let selMode='single';        // 'single' = edit only this node · 'multi' = edit the selected set
 let previewing=false, previewTime=0;
 let scrubbing=false;         // timeline playhead is being dragged
+let revealPreview=false;     // latched: show authoring overlays inside the camera preview
+let ctrlDown=false;          // transient: Ctrl reveals authoring overlays in the preview
 let timeScale=1;             // global stretch applied by the total-time modal
 let motion=null;             // precomputed eased motion profile for the active path
 
@@ -1692,6 +1696,15 @@ $('btnPipMax').addEventListener('click',e=>{ e.stopPropagation();
   const pf=$('pipFrame'); const max=pf.classList.toggle('max');
   $('btnPipMax').textContent = max ? '⤡' : '⤢'; $('btnPipMax').title = max ? 'Restore view' : 'Maximise view'; });
 
+// reveal toggle: latch authoring overlays on inside the otherwise-clean camera preview
+$('btnPipReveal').addEventListener('click',e=>{ e.stopPropagation();
+  revealPreview=!revealPreview; $('btnPipReveal').classList.toggle('active',revealPreview);
+  $('btnPipReveal').title = revealPreview ? 'Hide authoring overlays in the preview' : 'Show the flight path and authoring overlays in the preview (or hold Ctrl)'; });
+// Ctrl gives a transient reveal while held
+window.addEventListener('keydown',e=>{ if(e.key==='Control'||e.key==='Meta') ctrlDown=true; });
+window.addEventListener('keyup',  e=>{ if(e.key==='Control'||e.key==='Meta') ctrlDown=false; });
+window.addEventListener('blur',   ()=>{ ctrlDown=false; });
+
 $('btnAddPath').addEventListener('click',()=>{ pushHistory(); addPath(); });
 $('btnRecentre').addEventListener('click',recentreView);
 $('btnTime').addEventListener('click',()=>{ if(!modalOpen) openTimeModal(); });
@@ -1900,8 +1913,14 @@ function animate(){
     const r=pf.getBoundingClientRect();
     const vx=r.left, vy=innerHeight-r.bottom, vw=r.width, vh=r.height;   // GL origin is bottom-left
     pipCam.aspect=vw/vh; pipCam.updateProjectionMatrix();
+    // Clean preview by default: hide the flight path and authoring markers so the
+    // preview reads like the real camera output. Ctrl or the reveal toggle shows them.
+    const reveal = revealPreview || ctrlDown;
+    const pgV=pathGroup.visible, mgV=markerGroup.visible;
+    if(!reveal){ pathGroup.visible=false; markerGroup.visible=false; }
     renderer.setScissorTest(true); renderer.setViewport(vx,vy,vw,vh); renderer.setScissor(vx,vy,vw,vh);
     renderer.render(scene,pipCam); renderer.setScissorTest(false);
+    pathGroup.visible=pgV; markerGroup.visible=mgV;
   }
 }
 
