@@ -274,11 +274,13 @@
 
   /* read-only pip info label (replaces editable speed/height) */
   #pipInfo{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
-    display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(8,10,13,.82);
-    border:1px solid var(--panel-line);border-radius:6px;padding:4px 9px 5px;pointer-events:auto;}
+    display:flex;flex-direction:column;align-items:stretch;gap:4px;background:rgba(8,10,13,.82);
+    border:1px solid var(--panel-line);border-radius:6px;padding:5px 10px 6px;pointer-events:auto;}
   #pipInfo .pipHdr{font-family:'Roboto Mono',monospace;font-size:8.5px;letter-spacing:.1em;
     color:var(--dim);text-transform:uppercase;}
   #pipInfo .pipRow{display:flex;align-items:center;gap:8px;}
+  #pipInfo .pipCtl{display:flex;align-items:center;gap:10px;justify-content:space-between;}
+  #pipInfo .pipLbl{font-family:'Roboto',sans-serif;font-size:10px;color:var(--dim);white-space:nowrap;}
   #pipInfo .spd{cursor:ew-resize;padding:1px 3px;border-radius:3px;}
   #pipInfo .spd:hover{background:rgba(255,255,255,.08);}
   #pipInfo .hgt{display:inline-flex;align-items:center;gap:3px;}
@@ -1603,12 +1605,14 @@ function setPipControls(dest,isNext){
   el.style.display='flex';
   if(pipShown.dest===dest && pipShown.level===n.speed && pipShown.agl===n.agl && pipShown.next===isNext) return;
   pipShown={dest,level:n.speed,agl:n.agl,next:isNext};
+  const wp=dest+1;
+  const sLab=isNext ? `Speed to Next Waypoint (${wp})` : `Speed of Waypoint (${wp})`;
+  const hLab=isNext ? `Height of Next Waypoint (${wp})` : `Height of Waypoint (${wp})`;
   el.innerHTML =
-    `<span class="pipHdr">Next point</span>`+
-    `<span class="pipRow">`+
-      `<span class="spd" id="pipSpd" title="Speed — click to cycle, drag to change">${speedChevrons(n.speed)}</span>`+
-      `<span class="hgt"><button class="hb" id="pipHm">−</button><span class="hv" id="pipHv" title="Drag up/down to change height">${n.agl} m</span><button class="hb" id="pipHp">+</button></span>`+
-    `</span>`;
+    `<span class="pipCtl"><span class="pipLbl">${sLab}</span>`+
+      `<span class="spd" id="pipSpd" title="Click to cycle, drag to change">${speedChevrons(n.speed)}</span></span>`+
+    `<span class="pipCtl"><span class="pipLbl">${hLab}</span>`+
+      `<span class="hgt"><button class="hb" id="pipHm">−</button><span class="hv" id="pipHv" title="Drag up/down to change height">${n.agl} m</span><button class="hb" id="pipHp">+</button></span></span>`;
   attachSpeedScrub($('pipSpd'), a.id, dest, 'pip');
   $('pipHm').onclick=()=>applyEditFor(a.id,dest,'agl',a.nodes[dest].agl-HEIGHT_STEP);
   $('pipHp').onclick=()=>applyEditFor(a.id,dest,'agl',a.nodes[dest].agl+HEIGHT_STEP);
