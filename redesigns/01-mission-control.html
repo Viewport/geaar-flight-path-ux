@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 · Mission Control HUD — Flight Path Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b0e;
+    --bg2:#0c1318;
+    --panel:rgba(9,14,18,.92);
+    --line:rgba(120,200,180,.18);
+    --line-bright:rgba(120,220,190,.42);
+    --ink:#d7e6e0;
+    --dim:#6f8a82;
+    --amber:#ffb43d;
+    --green:#39e6a0;
+    --red:#ff3b54;
+    --blue:#3da9ff;
+    --s1:#c77dff;--s2:#3da9ff;--s3:#3ddc84;--s4:#ffd23d;--s5:#ff8a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Roboto Mono',monospace;overflow:hidden;}
+  .wrap{position:fixed;inset:0;display:flex;flex-direction:column;}
+
+  /* ---- top status bar ---- */
+  .topbar{height:38px;flex:0 0 auto;display:flex;align-items:center;gap:18px;
+    padding:0 14px;background:linear-gradient(180deg,#0d161b,#080d11);
+    border-bottom:1px solid var(--line);}
+  .brand{font-family:'Antonio';font-weight:700;font-size:17px;letter-spacing:.14em;color:var(--ink);}
+  .brand b{color:var(--amber);}
+  .sysline{font-size:10px;letter-spacing:.18em;color:var(--dim);display:flex;gap:16px;}
+  .sysline .ok{color:var(--green);}
+  .phase{margin-left:auto;font-family:'Antonio';font-size:12px;letter-spacing:.22em;
+    color:var(--amber);border:1px solid rgba(255,180,61,.4);padding:3px 12px;border-radius:2px;
+    background:rgba(255,180,61,.06);}
+
+  /* ---- body grid ---- */
+  .body{flex:1 1 auto;display:grid;grid-template-columns:208px 1fr 232px;min-height:0;}
+
+  /* bracket panel chrome */
+  .panel{position:relative;background:var(--panel);border:1px solid var(--line);margin:8px;border-radius:3px;}
+  .panel::before,.panel::after{content:"";position:absolute;width:10px;height:10px;pointer-events:none;}
+  .panel::before{top:-1px;left:-1px;border-top:2px solid var(--amber);border-left:2px solid var(--amber);}
+  .panel::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--amber);border-right:2px solid var(--amber);}
+  .ptitle{font-family:'Antonio';font-size:11px;letter-spacing:.2em;color:var(--dim);
+    padding:8px 10px 7px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .ptitle .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+
+  /* left telemetry rail */
+  .rail{display:flex;flex-direction:column;}
+  .telegrid{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .tcell{background:#05090c;border:1px solid var(--line);border-radius:2px;padding:7px 8px;}
+  .tcell .k{font-size:8.5px;letter-spacing:.16em;color:var(--dim);}
+  .tcell .v{font-family:'Antonio';font-size:19px;color:var(--ink);line-height:1.05;margin-top:3px;}
+  .tcell .v small{font-size:10px;color:var(--dim);font-family:'Roboto Mono';}
+  .tcell.wide{grid-column:1/3;}
+  .tcell.amber .v{color:var(--amber);}
+  .railsplit{margin-top:auto;padding:10px;border-top:1px solid var(--line);}
+  .miniprev{aspect-ratio:16/10;background:linear-gradient(160deg,#0a1820,#06424a 60%,#02181c);
+    border:1px solid var(--line-bright);border-radius:3px;position:relative;overflow:hidden;}
+  .miniprev .horizon{position:absolute;left:0;right:0;top:54%;height:1px;background:rgba(120,220,190,.35);}
+  .miniprev .recdot{position:absolute;top:6px;left:7px;display:flex;align-items:center;gap:5px;
+    font-size:8px;letter-spacing:.12em;color:var(--red);}
+  .miniprev .recdot i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+  .miniprev .ret{position:absolute;inset:0;}
+  .miniprev .ret::before,.miniprev .ret::after{content:"";position:absolute;background:rgba(255,180,61,.55);}
+  .miniprev .ret::before{left:50%;top:42%;width:1px;height:16%;transform:translateX(-.5px);}
+  .miniprev .ret::after{top:50%;left:42%;height:1px;width:16%;transform:translateY(-.5px);}
+  .miniprev .plabel{position:absolute;bottom:5px;left:7px;font-size:8px;letter-spacing:.14em;color:var(--dim);}
+
+  /* center viewport */
+  .stage{position:relative;margin:8px;border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+  .stage svg{position:absolute;inset:0;width:100%;height:100%;}
+  .vpchrome{position:absolute;inset:0;pointer-events:none;}
+  .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 3px,rgba(0,0,0,.10) 3px 4px);mix-blend-mode:overlay;}
+  .prompt{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+    font-size:10.5px;letter-spacing:.1em;color:var(--ink);background:rgba(6,10,13,.78);
+    border:1px solid var(--line-bright);border-left:2px solid var(--amber);padding:6px 14px;border-radius:2px;}
+  .prompt b{color:var(--amber);}
+  .corner{position:absolute;font-size:8.5px;letter-spacing:.16em;color:var(--dim);}
+  .corner.tl{top:10px;left:12px;}
+  .corner.tr{top:10px;right:12px;text-align:right;}
+  .corner.bl{bottom:46px;left:12px;}
+  .compass{position:absolute;top:34px;right:14px;width:48px;height:48px;border:1px solid var(--line-bright);
+    border-radius:50%;display:grid;place-items:center;font-family:'Antonio';font-size:12px;color:var(--amber);
+    background:rgba(6,10,13,.6);}
+  .compass::before{content:"N";position:absolute;top:3px;font-size:8px;color:var(--dim);}
+
+  /* selected waypoint gizmo card on stage */
+  .gizcard{position:absolute;left:54%;top:39%;pointer-events:auto;}
+  .gizcard .tag{font-size:9px;letter-spacing:.14em;color:#04110d;background:var(--amber);
+    padding:2px 8px;border-radius:2px 2px 0 0;font-weight:600;}
+  .gizcard .row{display:flex;gap:1px;background:var(--line);border:1px solid var(--line-bright);}
+  .gizbtn{background:rgba(8,14,18,.95);width:30px;height:28px;display:grid;place-items:center;
+    font-size:12px;color:var(--ink);}
+  .gizbtn.red{color:var(--red);}
+  .gizbtn.x{color:var(--red);}.gizbtn.y{color:var(--green);}
+
+  /* right ops column */
+  .ops{display:flex;flex-direction:column;}
+  .pathlist{padding:8px;display:flex;flex-direction:column;gap:6px;overflow:auto;}
+  .prow{border:1px solid var(--line);border-radius:2px;background:#05090c;}
+  .prow.active{border-color:var(--amber);box-shadow:inset 0 0 0 1px rgba(255,180,61,.25);}
+  .phead{display:flex;align-items:center;gap:8px;padding:7px 8px;}
+  .sw{width:9px;height:9px;border-radius:1px;}
+  .pname{font-size:11px;letter-spacing:.06em;flex:1;color:var(--ink);}
+  .badge{font-size:8px;letter-spacing:.1em;padding:2px 6px;border-radius:2px;}
+  .badge.tg{color:var(--red);border:1px solid rgba(255,59,84,.5);}
+  .badge.fx{color:var(--blue);border:1px solid rgba(61,169,255,.5);}
+  .wplist{border-top:1px solid var(--line);}
+  .wprow{display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:10px;color:var(--dim);
+    border-bottom:1px solid rgba(120,200,180,.07);}
+  .wprow.sel{background:rgba(255,180,61,.1);color:var(--ink);}
+  .wprow .idx{font-family:'Antonio';color:var(--amber);width:22px;}
+  .chev{letter-spacing:-1px;}
+  .actions{margin-top:auto;border-top:1px solid var(--line);padding:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .abtn{font-family:'Antonio';font-size:11px;letter-spacing:.12em;padding:9px 6px;text-align:center;
+    border:1px solid var(--line-bright);border-radius:2px;background:#070d11;color:var(--ink);}
+  .abtn.primary{grid-column:1/3;background:rgba(57,230,160,.12);border-color:var(--green);color:var(--green);}
+  .abtn.danger{color:var(--red);border-color:rgba(255,59,84,.4);}
+
+  /* ---- bottom flight strip ---- */
+  .strip{flex:0 0 auto;height:112px;background:linear-gradient(180deg,#0a1116,#060a0d);
+    border-top:1px solid var(--line);display:flex;align-items:stretch;gap:0;padding:0 4px;}
+  .stripside{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 14px;border-right:1px solid var(--line);min-width:120px;}
+  .play{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    background:rgba(57,230,160,.14);border:1px solid var(--green);color:var(--green);font-size:16px;}
+  .stripside .t{font-size:9px;letter-spacing:.16em;color:var(--dim);}
+  .stripside .t b{font-family:'Antonio';font-size:15px;color:var(--ink);letter-spacing:.04em;}
+  .track{flex:1;position:relative;padding:22px 24px 0;}
+  .seglabels{position:absolute;top:6px;left:24px;right:24px;display:flex;justify-content:space-between;font-size:8px;letter-spacing:.1em;color:var(--dim);}
+  .segbar{position:relative;height:14px;border-radius:2px;overflow:hidden;display:flex;border:1px solid var(--line);}
+  .segbar span{height:100%;}
+  .ticks{position:relative;height:30px;margin-top:6px;}
+  .tick{position:absolute;top:0;width:1px;height:10px;background:var(--line-bright);}
+  .tick i{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--dim);font-style:normal;}
+  .tick.wp::before{content:"";position:absolute;top:-12px;left:-3px;width:7px;height:7px;border-radius:50%;background:var(--amber);}
+  .playhead{position:absolute;top:-4px;bottom:8px;left:38%;width:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.8);}
+  .playhead::before{content:"";position:absolute;top:-5px;left:-4px;width:10px;height:8px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);}
+  .stripright{display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px;border-left:1px solid var(--line);min-width:150px;}
+  .nextwp{font-size:9px;letter-spacing:.14em;color:var(--dim);}
+  .ctrlrow{display:flex;gap:6px;}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line-bright);border-radius:2px;overflow:hidden;}
+  .stepper button{width:24px;height:26px;background:#070d11;color:var(--ink);border:none;font-size:13px;}
+  .stepper .val{font-family:'Antonio';font-size:12px;padding:0 8px;color:var(--amber);min-width:46px;text-align:center;}
+  .spdramp{display:flex;gap:2px;align-items:center;}
+  .spdramp i{width:7px;height:14px;border-radius:1px;opacity:.3;}
+  .spdramp i.on{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">GEAAR<b>·</b>FLIGHTPATH</div>
+    <div class="sysline">
+      <span>LINK <span class="ok">●NOMINAL</span></span>
+      <span>GNSS <span class="ok">●FIX 14</span></span>
+      <span>BATT 86%</span>
+    </div>
+    <div class="phase">PATH CREATION &amp; EDIT</div>
+  </div>
+
+  <div class="body">
+
+    <!-- LEFT TELEMETRY RAIL -->
+    <div class="panel rail">
+      <div class="ptitle">TELEMETRY <span class="dot"></span></div>
+      <div class="telegrid">
+        <div class="tcell"><div class="k">CURSOR E</div><div class="v">412<small>m</small></div></div>
+        <div class="tcell"><div class="k">CURSOR N</div><div class="v">986<small>m</small></div></div>
+        <div class="tcell"><div class="k">GROUND</div><div class="v">128<small>m</small></div></div>
+        <div class="tcell amber"><div class="k">AGL</div><div class="v">80<small>m</small></div></div>
+        <div class="tcell"><div class="k">WAYPOINTS</div><div class="v">05</div></div>
+        <div class="tcell"><div class="k">LENGTH</div><div class="v">1.9<small>km</small></div></div>
+        <div class="tcell wide amber"><div class="k">EST. FLIGHT TIME</div><div class="v">02:14<small> @ scale 1.0</small></div></div>
+      </div>
+      <div class="railsplit">
+        <div class="ptitle" style="border:none;padding:0 0 7px;">CAM PREVIEW</div>
+        <div class="miniprev">
+          <div class="horizon"></div><div class="ret"></div>
+          <div class="recdot"><i></i>LIVE</div>
+          <div class="plabel">WP04 · TARGETED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER VIEWPORT -->
+    <div class="stage">
+      <svg viewBox="0 0 900 620" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="bg" cx="42%" cy="36%" r="85%">
+            <stop offset="0%" stop-color="#0d2026"/><stop offset="55%" stop-color="#081317"/><stop offset="100%" stop-color="#04090b"/>
+          </radialGradient>
+          <linearGradient id="path" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#39e6a0"/><stop offset="100%" stop-color="#ffb43d"/>
+          </linearGradient>
+        </defs>
+        <rect width="900" height="620" fill="url(#bg)"/>
+        <g stroke="rgba(120,200,180,.10)" stroke-width="1">
+          <path d="M0 80 H900 M0 180 H900 M0 280 H900 M0 380 H900 M0 480 H900 M0 580 H900"/>
+          <path d="M100 0 V620 M250 0 V620 M400 0 V620 M550 0 V620 M700 0 V620 M850 0 V620"/>
+        </g>
+        <!-- aim/look-at dashed line -->
+        <line x1="486" y1="242" x2="640" y2="150" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="5 5" opacity=".8"/>
+        <circle cx="640" cy="150" r="9" fill="none" stroke="var(--red)" stroke-width="2"/>
+        <circle cx="640" cy="150" r="2.5" fill="var(--red)"/>
+        <text x="654" y="146" fill="var(--red)" font-size="11" font-family="Antonio">LOOK-AT T4</text>
+        <!-- flight path -->
+        <path d="M150 470 C 240 430, 250 320, 340 300 S 470 330, 486 242 S 600 150, 700 200 S 800 300, 820 360"
+              fill="none" stroke="url(#path)" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- waypoints -->
+        <g font-family="Antonio" font-size="11">
+          <circle cx="150" cy="470" r="6" fill="#0a0f12" stroke="#39e6a0" stroke-width="2"/><text x="138" y="492" fill="#6f8a82">01</text>
+          <circle cx="340" cy="300" r="6" fill="#0a0f12" stroke="#3ddc84" stroke-width="2"/><text x="328" y="322" fill="#6f8a82">02</text>
+          <circle cx="700" cy="200" r="6" fill="#0a0f12" stroke="#ffd23d" stroke-width="2"/><text x="688" y="222" fill="#6f8a82">04</text>
+          <circle cx="820" cy="360" r="6" fill="#0a0f12" stroke="#ff8a3d" stroke-width="2"/>
+        </g>
+        <!-- selected WP marker -->
+        <rect x="476" y="232" width="20" height="20" fill="none" stroke="var(--amber)" stroke-width="2"/>
+        <circle cx="486" cy="242" r="4" fill="var(--amber)"/>
+      </svg>
+
+      <div class="scan"></div>
+      <div class="vpchrome">
+        <div class="prompt">SELECTED <b>WP 03</b> · drag handles to reposition · right-drag to aim look-at</div>
+        <div class="corner tl">GRID 14U · ORTHO TOP · ZOOM 1.4×</div>
+        <div class="corner tr">SCALE 1:2400<br>± 0.5 m</div>
+        <div class="corner bl">◷ 02:14 TOTAL · 5 WP · 1.9 km</div>
+        <div class="compass">▲</div>
+      </div>
+
+      <!-- selected gizmo card -->
+      <div class="gizcard">
+        <div class="tag">WP 03 · AGL 80m · SPD 3</div>
+        <div class="row">
+          <div class="gizbtn x">◀</div><div class="gizbtn x">▶</div>
+          <div class="gizbtn y">▲</div><div class="gizbtn y">▼</div>
+          <div class="gizbtn">H−</div><div class="gizbtn">H+</div>
+          <div class="gizbtn">⌖</div>
+          <div class="gizbtn red">🗑</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT OPS -->
+    <div class="panel ops">
+      <div class="ptitle">FLIGHT PATHS <span style="color:var(--amber);font-size:14px;">+</span></div>
+      <div class="pathlist">
+        <div class="prow active">
+          <div class="phead">
+            <span class="sw" style="background:#39e6a0"></span>
+            <span class="pname">ORBIT ALPHA</span>
+            <span class="badge tg">TGT</span>
+          </div>
+          <div class="wplist">
+            <div class="wprow"><span class="idx">01</span><span>80m</span><span class="chev" style="color:var(--s2)">›››</span></div>
+            <div class="wprow"><span class="idx">02</span><span>80m</span><span class="chev" style="color:var(--s3)">›››</span></div>
+            <div class="wprow sel"><span class="idx">03</span><span>80m</span><span class="chev" style="color:var(--s3)">›››</span></div>
+            <div class="wprow"><span class="idx">04</span><span>100m</span><span class="chev" style="color:var(--s4)">›››</span></div>
+            <div class="wprow"><span class="idx">05</span><span>120m</span><span class="chev" style="color:var(--s5)">›››</span></div>
+          </div>
+        </div>
+        <div class="prow">
+          <div class="phead">
+            <span class="sw" style="background:#3da9ff"></span>
+            <span class="pname">SURVEY BRAVO</span>
+            <span class="badge fx">FIX</span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="abtn primary">▶ PREVIEW FLIGHT</div>
+        <div class="abtn">＋ ADD WP</div>
+        <div class="abtn">⌖ RECENTRE</div>
+        <div class="abtn danger">RESET ALL</div>
+        <div class="abtn">🎩 TOUR</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM FLIGHT STRIP -->
+  <div class="strip">
+    <div class="stripside">
+      <div class="play">❚❚</div>
+      <div class="t">T+ <b>00:51</b> / 02:14</div>
+    </div>
+    <div class="track">
+      <div class="seglabels"><span>WP01</span><span>WP02</span><span>WP03</span><span>WP04</span><span>WP05</span></div>
+      <div class="segbar">
+        <span style="flex:2;background:var(--s2)"></span>
+        <span style="flex:3;background:var(--s3)"></span>
+        <span style="flex:2;background:var(--s3)"></span>
+        <span style="flex:3;background:var(--s4)"></span>
+        <span style="flex:2.5;background:var(--s5)"></span>
+      </div>
+      <div class="ticks">
+        <div class="tick wp" style="left:0%"><i>00:00</i></div>
+        <div class="tick wp" style="left:24%"></div>
+        <div class="tick wp" style="left:48%"></div>
+        <div class="tick wp" style="left:74%"></div>
+        <div class="tick wp" style="left:100%"><i>02:14</i></div>
+      </div>
+      <div class="playhead"></div>
+    </div>
+    <div class="stripright">
+      <div class="nextwp">EDIT · WP 03</div>
+      <div class="ctrlrow">
+        <div class="stepper"><button>−</button><span class="val">80m</span><button>+</button></div>
+      </div>
+      <div class="spdramp">
+        <i class="on" style="background:var(--s1)"></i>
+        <i class="on" style="background:var(--s2)"></i>
+        <i class="on" style="background:var(--s3)"></i>
+        <i style="background:var(--s4)"></i>
+        <i style="background:var(--s5)"></i>
+        <span style="font-size:9px;color:var(--dim);margin-left:6px;letter-spacing:.1em;">SPD 3</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

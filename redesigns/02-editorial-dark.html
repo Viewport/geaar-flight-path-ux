@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Editorial Dark — Flight Path Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0f;
+    --card:rgba(22,24,29,.72);
+    --card-solid:#16181d;
+    --line:rgba(255,255,255,.07);
+    --line2:rgba(255,255,255,.12);
+    --ink:#f1f3f6;
+    --dim:#8b9099;
+    --dim2:#5c626c;
+    --accent:#7c8cff;
+    --accent-soft:rgba(124,140,255,.14);
+    --red:#ff5d73;
+    --s1:#c77dff;--s2:#5b9dff;--s3:#3ddc84;--s4:#ffd23d;--s5:#ff8a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;}
+  .app{position:fixed;inset:0;display:grid;grid-template-columns:60px 1fr 320px;}
+
+  /* ---- left icon rail ---- */
+  .rail{background:#0e0f13;border-right:1px solid var(--line);display:flex;flex-direction:column;
+    align-items:center;padding:14px 0;gap:6px;}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#7c8cff,#5b9dff);
+    display:grid;place-items:center;font-weight:700;font-size:15px;color:#0b0c0f;margin-bottom:14px;}
+  .ricon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:17px;
+    color:var(--dim);transition:.15s;}
+  .ricon.active{background:var(--accent-soft);color:var(--accent);}
+  .ricon:hover{background:rgba(255,255,255,.04);color:var(--ink);}
+  .rail .sp{margin-top:auto;}
+
+  /* ---- center stage ---- */
+  .center{position:relative;display:flex;flex-direction:column;min-width:0;}
+  .topbar{height:60px;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:0 22px;}
+  .crumb{font-size:13px;color:var(--dim);}
+  .crumb b{color:var(--ink);font-weight:600;}
+  .seg{margin-left:auto;display:flex;background:var(--card-solid);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;}
+  .seg div{font-size:12px;padding:6px 13px;border-radius:7px;color:var(--dim);font-weight:500;}
+  .seg div.on{background:var(--accent-soft);color:var(--accent);}
+  .stage{flex:1;position:relative;margin:0 22px 0;border-radius:18px;overflow:hidden;border:1px solid var(--line);min-height:0;}
+  .stage svg{position:absolute;inset:0;width:100%;height:100%;}
+  .pill{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12.5px;color:var(--ink);
+    background:rgba(16,17,21,.7);backdrop-filter:blur(14px);border:1px solid var(--line2);
+    padding:9px 18px;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.4);}
+  .pill b{color:var(--accent);}
+  .vstat{position:absolute;bottom:18px;left:18px;display:flex;gap:8px;}
+  .chip{font-size:11px;color:var(--dim);background:rgba(16,17,21,.7);backdrop-filter:blur(14px);
+    border:1px solid var(--line2);padding:6px 12px;border-radius:999px;}
+  .chip b{color:var(--ink);font-weight:600;}
+  /* floating selected gizmo */
+  .giz{position:absolute;left:53%;top:36%;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .gizring{width:54px;height:54px;border-radius:50%;border:1.5px solid var(--accent);
+    box-shadow:0 0 0 6px rgba(124,140,255,.12);position:relative;background:rgba(124,140,255,.08);backdrop-filter:blur(4px);}
+  .gizring::after{content:"";position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .gizbar{display:flex;gap:4px;background:rgba(16,17,21,.82);backdrop-filter:blur(14px);
+    border:1px solid var(--line2);border-radius:12px;padding:5px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+  .gizbar button{width:34px;height:34px;border-radius:8px;border:none;background:transparent;color:var(--ink);font-size:14px;}
+  .gizbar button:hover{background:rgba(255,255,255,.07);}
+  .gizbar .del{color:var(--red);}
+
+  /* camera preview floating */
+  .preview{position:absolute;bottom:18px;right:18px;width:248px;border-radius:14px;overflow:hidden;
+    border:1px solid var(--line2);box-shadow:0 16px 50px rgba(0,0,0,.6);}
+  .preview .feed{aspect-ratio:16/10;background:linear-gradient(165deg,#13202b,#1f5560 55%,#0a232a);position:relative;}
+  .preview .feed .hz{position:absolute;left:0;right:0;top:52%;height:1px;background:rgba(255,255,255,.25);}
+  .preview .feed .rc{position:absolute;top:8px;left:9px;font-size:9px;letter-spacing:.08em;color:#fff;
+    display:flex;align-items:center;gap:5px;}
+  .preview .feed .rc i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+  .preview .bar{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card-solid);font-size:11px;color:var(--dim);}
+  .preview .bar .mx{margin-left:auto;font-size:13px;color:var(--ink);}
+
+  /* timeline floating */
+  .timeline{flex:0 0 auto;margin:16px 22px 22px;background:var(--card-solid);border:1px solid var(--line);
+    border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:16px;}
+  .play{width:40px;height:40px;flex:0 0 auto;border-radius:50%;background:var(--accent);color:#0b0c0f;
+    display:grid;place-items:center;font-size:15px;border:none;box-shadow:0 6px 20px rgba(124,140,255,.4);}
+  .tlmid{flex:1;}
+  .tltop{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:7px;}
+  .tlbar{height:8px;border-radius:6px;overflow:hidden;display:flex;position:relative;}
+  .tlbar span{height:100%;}
+  .tlbar .head{position:absolute;top:-4px;bottom:-4px;left:39%;width:2px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,.7);}
+  .tldots{position:relative;height:14px;margin-top:5px;}
+  .tldots i{position:absolute;top:3px;width:8px;height:8px;border-radius:50%;background:var(--card-solid);
+    border:2px solid var(--dim);transform:translateX(-50%);}
+  .tldots i.sel{border-color:var(--accent);background:var(--accent);}
+  .total{font-size:12px;color:var(--dim);white-space:nowrap;}
+  .total b{color:var(--ink);font-weight:600;}
+
+  /* ---- right inspector ---- */
+  .inspector{background:#0e0f13;border-left:1px solid var(--line);overflow:auto;padding:20px;}
+  .insp-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .insp-head .sw{width:11px;height:11px;border-radius:4px;background:var(--accent);}
+  .insp-head h2{font-size:16px;font-weight:600;}
+  .insp-sub{font-size:12px;color:var(--dim);margin-bottom:20px;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim2);margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;background:var(--card-solid);border:1px solid var(--line2);border-radius:10px;overflow:hidden;}
+  .stepper button{width:40px;height:42px;background:transparent;border:none;color:var(--ink);font-size:18px;}
+  .stepper button:hover{background:rgba(255,255,255,.05);}
+  .stepper .v{flex:1;text-align:center;font-size:16px;font-weight:600;font-family:'Roboto Mono';}
+  .stepper .v small{font-size:11px;color:var(--dim);font-weight:400;}
+  .spd{display:flex;gap:6px;}
+  .spd .pip{flex:1;height:40px;border-radius:9px;background:var(--card-solid);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--dim2);}
+  .spd .pip.on{color:#0b0c0f;}
+  .toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card-solid);
+    border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-size:13px;}
+  .sw-toggle{width:42px;height:24px;border-radius:999px;background:var(--accent);position:relative;}
+  .sw-toggle::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;}
+  .insp-foot{margin-top:8px;padding-top:18px;border-top:1px solid var(--line);}
+  .pathrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;font-size:13px;}
+  .pathrow.active{background:var(--accent-soft);}
+  .pathrow .sw2{width:9px;height:9px;border-radius:3px;}
+  .pathrow .ct{margin-left:auto;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+  .addpath{margin-top:6px;width:100%;padding:11px;border-radius:10px;border:1px dashed var(--line2);
+    background:transparent;color:var(--dim);font-size:13px;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT ICON RAIL -->
+  <div class="rail">
+    <div class="logo">G</div>
+    <div class="ricon active" title="Edit">✎</div>
+    <div class="ricon" title="Paths">⟋</div>
+    <div class="ricon" title="Camera">▣</div>
+    <div class="ricon" title="Timeline">≣</div>
+    <div class="ricon sp" title="Tour">🎩</div>
+    <div class="ricon" title="Settings">⚙</div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="topbar">
+      <div class="crumb">Project · <b>Orbit Alpha</b></div>
+      <div class="seg"><div class="on">Author</div><div>Preview</div><div>Export</div></div>
+    </div>
+
+    <div class="stage">
+      <svg viewBox="0 0 900 560" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="bg2" cx="40%" cy="30%" r="90%">
+            <stop offset="0%" stop-color="#1a1d28"/><stop offset="60%" stop-color="#101117"/><stop offset="100%" stop-color="#0a0b0e"/>
+          </radialGradient>
+        </defs>
+        <rect width="900" height="560" fill="url(#bg2)"/>
+        <g stroke="rgba(255,255,255,.035)" stroke-width="1">
+          <path d="M0 120 H900 M0 240 H900 M0 360 H900 M0 480 H900"/>
+          <path d="M180 0 V560 M360 0 V560 M540 0 V560 M720 0 V560"/>
+        </g>
+        <line x1="486" y1="232" x2="640" y2="150" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="2 6" stroke-linecap="round" opacity=".75"/>
+        <circle cx="640" cy="150" r="10" fill="none" stroke="var(--red)" stroke-width="1.5" opacity=".9"/>
+        <circle cx="640" cy="150" r="3" fill="var(--red)"/>
+        <path d="M150 430 C 240 400, 250 300, 340 290 S 470 320, 486 232 S 600 150, 700 200 S 800 290, 820 340"
+              fill="none" stroke="#7c8cff" stroke-width="3" stroke-linecap="round" opacity=".95"/>
+        <g>
+          <circle cx="150" cy="430" r="7" fill="#101117" stroke="#5b9dff" stroke-width="2.5"/>
+          <circle cx="340" cy="290" r="7" fill="#101117" stroke="#3ddc84" stroke-width="2.5"/>
+          <circle cx="700" cy="200" r="7" fill="#101117" stroke="#ffd23d" stroke-width="2.5"/>
+          <circle cx="820" cy="340" r="7" fill="#101117" stroke="#ff8a3d" stroke-width="2.5"/>
+        </g>
+      </svg>
+
+      <div class="pill">Drag the ring to reposition <b>Waypoint 03</b>, or right-drag the canvas to aim its look-at</div>
+      <div class="vstat">
+        <div class="chip"><b>5</b> waypoints</div>
+        <div class="chip"><b>1.9</b> km</div>
+        <div class="chip"><b>02:14</b> flight</div>
+      </div>
+
+      <div class="giz">
+        <div class="gizring"></div>
+        <div class="gizbar">
+          <button title="move">✛</button>
+          <button title="height">↕</button>
+          <button title="speed">⏩</button>
+          <button title="look-at">⌖</button>
+          <button class="del" title="delete">🗑</button>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="feed"><div class="hz"></div><div class="rc"><i></i>LIVE · WP04</div></div>
+        <div class="bar">Camera preview <span class="mx">⤢</span></div>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <button class="play">▶</button>
+      <div class="tlmid">
+        <div class="tltop"><span>00:51</span><span>Targeted · ease in/out</span><span>02:14</span></div>
+        <div class="tlbar">
+          <span style="flex:2;background:var(--s2)"></span>
+          <span style="flex:3;background:var(--s3)"></span>
+          <span style="flex:2;background:var(--s3)"></span>
+          <span style="flex:3;background:var(--s4)"></span>
+          <span style="flex:2.5;background:var(--s5)"></span>
+          <span class="head"></span>
+        </div>
+        <div class="tldots">
+          <i style="left:0%"></i><i style="left:24%"></i><i class="sel" style="left:48%"></i><i style="left:74%"></i><i style="left:100%"></i>
+        </div>
+      </div>
+      <div class="total">Total <b>02:14</b></div>
+    </div>
+  </div>
+
+  <!-- RIGHT INSPECTOR -->
+  <div class="inspector">
+    <div class="insp-head"><span class="sw"></span><h2>Waypoint 03</h2></div>
+    <div class="insp-sub">Orbit Alpha · targeted camera</div>
+
+    <div class="field">
+      <label>Height above ground</label>
+      <div class="stepper"><button>−</button><div class="v">80 <small>m AGL</small></div><button>+</button></div>
+    </div>
+
+    <div class="field">
+      <label>Speed</label>
+      <div class="spd">
+        <div class="pip on" style="background:var(--s1)">1</div>
+        <div class="pip on" style="background:var(--s2)">2</div>
+        <div class="pip on" style="background:var(--s3)">3</div>
+        <div class="pip">4</div>
+        <div class="pip">5</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Look-at target</label>
+      <div class="toggle">Aim at target T4 <span class="sw-toggle"></span></div>
+    </div>
+
+    <div class="field">
+      <label>Position</label>
+      <div class="stepper"><button>−</button><div class="v" style="font-size:13px">E 486 · N 232</div><button>+</button></div>
+    </div>
+
+    <div class="insp-foot">
+      <label style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim2);display:block;margin-bottom:10px;">Paths</label>
+      <div class="pathrow active"><span class="sw2" style="background:#7c8cff"></span> Orbit Alpha <span class="ct">Targeted · 5</span></div>
+      <div class="pathrow"><span class="sw2" style="background:#5b9dff"></span> Survey Bravo <span class="ct">Fixed · 3</span></div>
+      <button class="addpath">＋ New flight path</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

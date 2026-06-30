@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 · Editor Dock — Flight Path Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Antonio:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1c1f;
+    --panel:#232629;
+    --panel2:#2a2e32;
+    --header:#202327;
+    --line:#121315;
+    --line2:#34383d;
+    --ink:#d6dadf;
+    --dim:#878d94;
+    --accent:#3da9ff;
+    --sel:#2a4a66;
+    --red:#ff4d63;
+    --green:#3ddc84;
+    --s1:#c77dff;--s2:#3da9ff;--s3:#3ddc84;--s4:#ffd23d;--s5:#ff8a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Roboto',sans-serif;font-size:12px;overflow:hidden;}
+  .app{position:fixed;inset:0;display:flex;flex-direction:column;}
+
+  /* main toolbar */
+  .toolbar{height:38px;background:var(--header);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 8px;}
+  .tbtn{height:24px;padding:0 9px;border-radius:4px;background:var(--panel2);border:1px solid var(--line2);
+    display:flex;align-items:center;gap:5px;color:var(--ink);font-size:11px;}
+  .tbtn.play{background:#2c3138;}
+  .tbtn.active{background:var(--sel);border-color:var(--accent);color:#cfe7ff;}
+  .toolbar .center{margin:0 auto;display:flex;gap:4px;}
+  .toolbar .right{display:flex;gap:6px;align-items:center;}
+  .brand{font-family:'Antonio';font-size:14px;letter-spacing:.06em;margin-right:8px;}
+  .brand b{color:var(--accent);}
+
+  /* dock grid */
+  .dock{flex:1;display:grid;grid-template-columns:218px 1fr 268px;grid-template-rows:1fr 188px;
+    gap:1px;background:var(--line);min-height:0;}
+
+  .pane{background:var(--panel);display:flex;flex-direction:column;min-height:0;min-width:0;}
+  .ptabs{height:26px;background:var(--header);display:flex;align-items:stretch;border-bottom:1px solid var(--line);}
+  .ptab{display:flex;align-items:center;gap:6px;padding:0 12px;font-size:11px;color:var(--dim);border-right:1px solid var(--line);}
+  .ptab.on{background:var(--panel);color:var(--ink);}
+  .ptab .x{color:var(--dim);font-size:10px;margin-left:2px;}
+  .pbody{flex:1;overflow:auto;}
+
+  /* HIERARCHY (left, spans both rows) */
+  .hierarchy{grid-column:1;grid-row:1/3;}
+  .scene{grid-column:2;grid-row:1;}
+  .inspector{grid-column:3;grid-row:1/3;}
+  .bottomdock{grid-column:2;grid-row:2;}
+  .hsearch{padding:6px 8px;border-bottom:1px solid var(--line);}
+  .hsearch input{width:100%;background:#191b1e;border:1px solid var(--line2);border-radius:4px;color:var(--ink);
+    font-size:11px;padding:5px 8px;font-family:inherit;}
+  .tree{padding:4px 0;}
+  .trow{display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;font-size:12px;cursor:default;}
+  .trow:hover{background:rgba(255,255,255,.03);}
+  .trow.sel{background:var(--sel);}
+  .trow .arw{width:10px;color:var(--dim);font-size:9px;}
+  .trow .ic{width:14px;text-align:center;}
+  .trow .sw{width:9px;height:9px;border-radius:2px;}
+  .trow.child{padding-left:30px;color:var(--ink);}
+  .trow.child .badge{margin-left:auto;font-size:9px;font-family:'Roboto Mono';color:var(--dim);}
+  .trow .vis{margin-left:auto;color:var(--dim);font-size:11px;}
+
+  /* SCENE (center top) */
+  .scene{position:relative;}
+  .scene .ptabs .gizmobar{margin-left:auto;display:flex;gap:4px;padding:3px;}
+  .gtool{width:20px;height:20px;border-radius:3px;background:var(--panel2);border:1px solid var(--line2);display:grid;place-items:center;font-size:11px;}
+  .gtool.on{background:var(--sel);border-color:var(--accent);}
+  .viewport{flex:1;position:relative;overflow:hidden;}
+  .viewport svg{position:absolute;inset:0;width:100%;height:100%;}
+  .vlabel{position:absolute;top:8px;left:10px;font-size:10px;color:var(--dim);font-family:'Roboto Mono';}
+  .axis{position:absolute;top:8px;right:10px;font-size:10px;color:var(--dim);font-family:'Roboto Mono';text-align:right;}
+  .scene .prompt{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--ink);
+    background:rgba(20,22,25,.9);border:1px solid var(--line2);padding:6px 13px;border-radius:5px;}
+  .scene .prompt b{color:var(--accent);}
+  /* on-scene transform gizmo */
+  .scenegiz{position:absolute;left:52%;top:38%;}
+  .scenegiz .hx{position:absolute;left:0;top:50%;width:54px;height:2px;background:var(--red);}
+  .scenegiz .hx::after{content:"";position:absolute;right:-4px;top:-3px;border:4px solid transparent;border-left-color:var(--red);}
+  .scenegiz .hy{position:absolute;left:0;bottom:0;width:2px;height:54px;background:var(--green);}
+  .scenegiz .hy::after{content:"";position:absolute;top:-4px;left:-3px;border:4px solid transparent;border-bottom-color:var(--green);}
+  .scenegiz .ctr{position:absolute;left:-5px;top:-5px;width:10px;height:10px;background:var(--accent);border:1px solid #fff;}
+
+  /* INSPECTOR (right, spans both rows) */
+  .inspector{grid-row:1/3;}
+  .insp-title{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line);}
+  .insp-title .ic{width:16px;height:16px;border-radius:3px;background:var(--accent);display:grid;place-items:center;font-size:10px;color:#06223a;}
+  .insp-title h2{font-size:13px;}
+  .insp-title .en{margin-left:auto;width:14px;height:14px;border:1px solid var(--line2);border-radius:3px;background:#191b1e;}
+  .comp{border-bottom:1px solid var(--line);}
+  .comp-h{display:flex;align-items:center;gap:7px;padding:8px 10px;font-size:11px;font-weight:500;background:var(--panel2);}
+  .comp-h .arw{font-size:9px;color:var(--dim);}
+  .comp-h .ic{color:var(--dim);}
+  .comp-b{padding:8px 10px;}
+  .prop{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .prop label{width:62px;font-size:11px;color:var(--dim);}
+  .prop .grp{flex:1;display:flex;gap:4px;}
+  .prop .num{flex:1;background:#191b1e;border:1px solid var(--line2);border-radius:3px;padding:5px 7px;
+    font-family:'Roboto Mono';font-size:11px;color:var(--ink);display:flex;gap:5px;}
+  .prop .num b{color:var(--dim);font-weight:400;}
+  .stepper{display:flex;flex:1;background:#191b1e;border:1px solid var(--line2);border-radius:3px;overflow:hidden;}
+  .stepper button{width:24px;background:var(--panel2);border:none;color:var(--ink);font-size:13px;}
+  .stepper .v{flex:1;text-align:center;font-family:'Roboto Mono';font-size:11px;line-height:26px;}
+  .spd{display:flex;gap:3px;flex:1;}
+  .spd i{flex:1;height:24px;border-radius:3px;display:grid;place-items:center;font-size:10px;font-family:'Roboto Mono';color:#1a1c1f;font-weight:600;background:#33383d;}
+  .checkrow{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:8px;}
+  .check{width:14px;height:14px;border:1px solid var(--line2);border-radius:3px;background:var(--accent);display:grid;place-items:center;color:#06223a;font-size:10px;}
+  .dropdown{flex:1;background:#191b1e;border:1px solid var(--line2);border-radius:3px;padding:5px 8px;font-size:11px;display:flex;align-items:center;}
+  .dropdown::after{content:"⌄";margin-left:auto;color:var(--dim);}
+  .addcomp{margin:10px;padding:7px;border:1px solid var(--line2);border-radius:4px;text-align:center;font-size:11px;color:var(--dim);background:var(--panel2);}
+
+  /* BOTTOM DOCK (center) */
+  .bottomdock .ptabs .right{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px;}
+  .bottomdock .transport{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);}
+  .play2{width:28px;height:28px;border-radius:4px;background:#2c3138;border:1px solid var(--line2);color:var(--green);display:grid;place-items:center;}
+  .tc{font-family:'Roboto Mono';font-size:11px;color:var(--dim);}
+  .tc b{color:var(--ink);}
+  .tl-wrap{flex:1;display:flex;flex-direction:column;padding:8px 12px;gap:6px;overflow:hidden;}
+  .tl-ruler{height:16px;position:relative;font-family:'Roboto Mono';font-size:9px;color:var(--dim);}
+  .tl-ruler span{position:absolute;transform:translateX(-50%);top:3px;}
+  .tl-track{position:relative;}
+  .tl-seg{height:18px;border-radius:3px;overflow:hidden;display:flex;border:1px solid var(--line);}
+  .tl-seg span{height:100%;}
+  .tl-dots{position:relative;height:16px;margin-top:5px;}
+  .tl-dots i{position:absolute;top:2px;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid var(--dim);transform:translateX(-50%);}
+  .tl-dots i.sel{border-color:var(--accent);background:var(--accent);}
+  .tl-dots i span{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-family:'Antonio';font-size:9px;color:var(--dim);}
+  .tl-head{position:absolute;top:-2px;height:42px;left:39%;width:1.5px;background:#fff;box-shadow:0 0 5px rgba(255,255,255,.7);z-index:3;}
+  .tl-head::before{content:"";position:absolute;top:-1px;left:-4px;width:9px;height:7px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);}
+  /* preview docked corner */
+  .miniprev{position:absolute;right:10px;bottom:10px;width:150px;border:1px solid var(--line2);border-radius:5px;overflow:hidden;}
+  .miniprev .f{aspect-ratio:16/9;background:linear-gradient(160deg,#13202a,#1d5560 60%,#08222a);position:relative;}
+  .miniprev .f i{position:absolute;top:5px;left:6px;width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);}
+  .statusbar{height:22px;background:var(--header);border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 12px;font-size:10px;color:var(--dim);font-family:'Roboto Mono';}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="brand">GEAAR<b>·</b>FP</div>
+    <div class="tbtn active">✛ Move</div>
+    <div class="tbtn">↻ Rotate</div>
+    <div class="tbtn">⌖ Aim</div>
+    <div class="center">
+      <div class="tbtn play">▶</div>
+      <div class="tbtn play">❚❚</div>
+    </div>
+    <div class="right">
+      <div class="tbtn">＋ Waypoint</div>
+      <div class="tbtn">Layers ⌄</div>
+      <div class="tbtn">⚙</div>
+    </div>
+  </div>
+
+  <!-- DOCK -->
+  <div class="dock">
+
+    <!-- HIERARCHY -->
+    <div class="pane hierarchy">
+      <div class="ptabs"><div class="ptab on">Hierarchy <span class="x">✕</span></div><div class="ptab">Project</div></div>
+      <div class="hsearch"><input placeholder="🔍  Search…" /></div>
+      <div class="pbody">
+        <div class="tree">
+          <div class="trow"><span class="arw">▾</span><span class="ic">⟋</span><span class="sw" style="background:var(--accent)"></span>Orbit Alpha <span class="vis">👁</span></div>
+          <div class="trow child"><span class="ic">◔</span>Waypoint 01<span class="badge">80m·L2</span></div>
+          <div class="trow child"><span class="ic">◔</span>Waypoint 02<span class="badge">80m·L3</span></div>
+          <div class="trow child sel"><span class="ic">◉</span>Waypoint 03<span class="badge">80m·L3</span></div>
+          <div class="trow child" style="padding-left:46px;color:var(--red)"><span class="ic">⌖</span>Look-at T4</div>
+          <div class="trow child"><span class="ic">◔</span>Waypoint 04<span class="badge">100m·L4</span></div>
+          <div class="trow child"><span class="ic">◔</span>Waypoint 05<span class="badge">120m·L5</span></div>
+          <div class="trow"><span class="arw">▸</span><span class="ic">⟋</span><span class="sw" style="background:#5b9dff"></span>Survey Bravo <span class="vis">👁</span></div>
+          <div class="trow"><span class="arw"></span><span class="ic" style="color:var(--dim)">▦</span>Terrain</div>
+          <div class="trow"><span class="arw"></span><span class="ic" style="color:var(--dim)">☀</span>Directional Light</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE -->
+    <div class="pane scene">
+      <div class="ptabs">
+        <div class="ptab on">Scene</div><div class="ptab">Game (Camera POV)</div>
+        <div class="gizmobar"><div class="gtool on">⊞</div><div class="gtool">◰</div><div class="gtool">⌖</div></div>
+      </div>
+      <div class="viewport">
+        <svg viewBox="0 0 900 460" preserveAspectRatio="xMidYMid slice">
+          <defs><linearGradient id="b7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#222a32"/><stop offset="1" stop-color="#15191d"/></linearGradient></defs>
+          <rect width="900" height="460" fill="url(#b7)"/>
+          <g stroke="rgba(255,255,255,.05)"><path d="M0 115 H900 M0 230 H900 M0 345 H900"/><path d="M225 0 V460 M450 0 V460 M675 0 V460"/></g>
+          <line x1="486" y1="205" x2="640" y2="120" stroke="var(--red)" stroke-width="1.4" stroke-dasharray="4 5" opacity=".8"/>
+          <circle cx="640" cy="120" r="9" fill="none" stroke="var(--red)" stroke-width="1.5"/><circle cx="640" cy="120" r="2.5" fill="var(--red)"/>
+          <path d="M150 360 C 240 330, 250 220, 340 210 S 470 240, 486 205 S 600 120, 700 165 S 800 250, 820 290"
+                fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="150" cy="360" r="6" fill="#15191d" stroke="#3ddc84" stroke-width="2.5"/>
+          <circle cx="340" cy="210" r="6" fill="#15191d" stroke="#3ddc84" stroke-width="2.5"/>
+          <circle cx="700" cy="165" r="6" fill="#15191d" stroke="#ffd23d" stroke-width="2.5"/>
+          <circle cx="820" cy="290" r="6" fill="#15191d" stroke="#ff8a3d" stroke-width="2.5"/>
+        </svg>
+        <div class="vlabel">Scene · Persp · Shaded</div>
+        <div class="axis">x ▸ z ▴<br>1 unit = 1 m</div>
+        <div class="scenegiz"><div class="hx"></div><div class="hy"></div><div class="ctr"></div></div>
+        <div class="prompt">Selected <b>Waypoint 03</b> · drag axis handles to move · hold V to snap to vertex</div>
+      </div>
+    </div>
+
+    <!-- INSPECTOR -->
+    <div class="pane inspector">
+      <div class="ptabs"><div class="ptab on">Inspector</div><div class="ptab">Lighting</div></div>
+      <div class="pbody">
+        <div class="insp-title"><span class="ic">◉</span><h2>Waypoint 03</h2><span class="en"></span></div>
+
+        <div class="comp">
+          <div class="comp-h"><span class="arw">▾</span><span class="ic">✛</span> Transform</div>
+          <div class="comp-b">
+            <div class="prop"><label>Position</label><div class="grp">
+              <div class="num"><b>X</b> 486</div><div class="num"><b>Z</b> 232</div></div></div>
+            <div class="prop"><label>Height AGL</label>
+              <div class="stepper"><button>−</button><div class="v">80 m</div><button>+</button></div></div>
+          </div>
+        </div>
+
+        <div class="comp">
+          <div class="comp-h"><span class="arw">▾</span><span class="ic">⏩</span> Motion</div>
+          <div class="comp-b">
+            <div class="prop"><label>Speed lvl</label>
+              <div class="spd"><i style="background:var(--s1)">1</i><i style="background:var(--s2)">2</i><i style="background:var(--s3)">3</i><i style="opacity:.3">4</i><i style="opacity:.3">5</i></div></div>
+            <div class="prop"><label>Cruise</label><div class="num" style="flex:1"><b>≈</b> 96 m/s · eased</div></div>
+          </div>
+        </div>
+
+        <div class="comp">
+          <div class="comp-h"><span class="arw">▾</span><span class="ic">⌖</span> Camera</div>
+          <div class="comp-b">
+            <div class="checkrow"><span class="check">✓</span> Use look-at target</div>
+            <div class="prop"><label>Target</label><div class="dropdown">Target T4 (+40 m)</div></div>
+            <div class="prop"><label>Type</label><div class="dropdown">Targeted</div></div>
+          </div>
+        </div>
+
+        <div class="addcomp">＋ Add Component</div>
+      </div>
+    </div>
+
+    <!-- BOTTOM DOCK -->
+    <div class="pane bottomdock" style="position:relative;">
+      <div class="ptabs">
+        <div class="ptab on">Timeline</div><div class="ptab">Console</div><div class="ptab">Animation</div>
+        <div class="right"><span class="tc"><b>00:51</b> / 02:14</span></div>
+      </div>
+      <div class="transport">
+        <div class="play2">❚❚</div>
+        <div class="tc">Frame <b>918</b> / 2412 · 30 fps · scale 1.0×</div>
+      </div>
+      <div class="tl-wrap">
+        <div class="tl-ruler"><span style="left:0%">0:00</span><span style="left:24%">0:32</span><span style="left:48%">0:51</span><span style="left:74%">1:38</span><span style="left:100%">2:14</span></div>
+        <div class="tl-track">
+          <div class="tl-seg">
+            <span style="flex:2;background:var(--s2)"></span><span style="flex:3;background:var(--s3)"></span>
+            <span style="flex:2;background:var(--s3)"></span><span style="flex:3;background:var(--s4)"></span><span style="flex:2.5;background:var(--s5)"></span>
+          </div>
+          <div class="tl-dots">
+            <i style="left:0%"><span>1</span></i><i style="left:24%"><span>2</span></i><i class="sel" style="left:48%"><span>3</span></i><i style="left:74%"><span>4</span></i><i style="left:100%"><span>5</span></i>
+          </div>
+          <div class="tl-head"></div>
+        </div>
+      </div>
+      <div class="miniprev"><div class="f"><i></i></div></div>
+    </div>
+  </div>
+
+  <div class="statusbar"><span>● Ready</span><span>5 waypoints · 1 target</span><span>Orbit Alpha · Targeted</span><span style="margin-left:auto">Undo: move WP03 · Redo: —</span></div>
+</div>
+</body>
+</html>

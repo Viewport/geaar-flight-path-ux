@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 · GIS Map — Flight Path Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1318;
+    --map:#0b1014;
+    --panel:#141a21;
+    --panel2:#1a212a;
+    --line:rgba(255,255,255,.09);
+    --ink:#eef2f5;
+    --dim:#8a929c;
+    --accent:#2dd4bf;        /* teal — cartographic route accent */
+    --route:#33b1ff;
+    --red:#ff4d6d;
+    --green:#3ddc84;
+    --s1:#c77dff;--s2:#33b1ff;--s3:#3ddc84;--s4:#ffd23d;--s5:#ff8a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Roboto',sans-serif;overflow:hidden;}
+  .app{position:fixed;inset:0;}
+
+  /* MAP */
+  .map{position:absolute;inset:0;background:var(--map);}
+  .map svg{width:100%;height:100%;}
+
+  /* top search/title bar */
+  .topbar{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;gap:14px;
+    padding:0 16px;background:linear-gradient(180deg,rgba(14,19,24,.96),rgba(14,19,24,.7));z-index:8;
+    border-bottom:1px solid var(--line);}
+  .brand{font-family:'Antonio';font-size:18px;letter-spacing:.07em;}
+  .brand b{color:var(--accent);}
+  .search{flex:1;max-width:340px;display:flex;align-items:center;gap:9px;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-size:13px;color:var(--dim);}
+  .topbar .crumbs{margin-left:6px;font-size:13px;color:var(--dim);}
+  .topbar .crumbs b{color:var(--ink);}
+  .topbar .acts{margin-left:auto;display:flex;gap:8px;}
+  .topbar .acts .b{font-size:12px;padding:8px 13px;border:1px solid var(--line);border-radius:8px;color:var(--ink);}
+  .topbar .acts .b.primary{background:var(--accent);color:#062b27;border:none;font-weight:600;}
+
+  /* LEFT layers panel */
+  .layers{position:absolute;top:64px;left:14px;width:236px;background:rgba(20,26,33,.92);backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:14px;z-index:7;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.5);}
+  .layers .lh{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;}
+  .layers .lh .cl{margin-left:auto;color:var(--dim);font-size:16px;}
+  .lgroup{padding:6px;}
+  .lgrp-t{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:8px 8px 5px;}
+  .lrow{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;font-size:13px;}
+  .lrow:hover{background:rgba(255,255,255,.03);}
+  .lrow.active{background:rgba(45,212,191,.1);}
+  .lrow .sw{width:10px;height:10px;border-radius:3px;}
+  .lrow .eye{margin-left:auto;color:var(--dim);font-size:14px;}
+  .lrow .cnt{font-size:11px;color:var(--dim);margin-left:auto;}
+  .lrow.sub{padding-left:26px;font-size:12px;color:var(--dim);}
+  .lrow.sub.sel{color:var(--ink);background:rgba(51,177,255,.1);}
+  .addlayer{margin:6px;padding:9px;border:1px dashed var(--line);border-radius:9px;text-align:center;font-size:12px;color:var(--dim);}
+
+  /* floating round map controls */
+  .mapctl{position:absolute;right:336px;bottom:78px;display:flex;flex-direction:column;gap:9px;z-index:7;}
+  .mapctl .c{width:44px;height:44px;border-radius:12px;background:rgba(20,26,33,.92);backdrop-filter:blur(12px);
+    border:1px solid var(--line);display:grid;place-items:center;font-size:18px;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .compass{width:48px;height:48px;border-radius:50%;background:rgba(20,26,33,.92);border:1px solid var(--line);
+    display:grid;place-items:center;font-family:'Antonio';color:var(--red);position:relative;}
+  .compass small{position:absolute;top:3px;font-size:8px;color:var(--dim);}
+
+  /* RIGHT inspector (slide-in) */
+  .inspector{position:absolute;top:64px;right:14px;bottom:64px;width:308px;background:rgba(20,26,33,.95);
+    backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;z-index:7;overflow:auto;
+    box-shadow:0 14px 40px rgba(0,0,0,.5);}
+  .insp-head{padding:16px;border-bottom:1px solid var(--line);}
+  .insp-head .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);}
+  .insp-head h2{font-size:18px;margin-top:4px;}
+  .insp-head .coord{font-size:12px;color:var(--dim);font-family:'Roboto Mono';margin-top:6px;}
+  .insp-body{padding:16px;}
+  .field{margin-bottom:16px;}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);display:block;margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .stepper button{width:38px;height:40px;background:transparent;border:none;color:var(--ink);font-size:16px;}
+  .stepper .v{flex:1;text-align:center;font-family:'Roboto Mono';font-size:14px;}
+  .spd{display:flex;gap:5px;}
+  .spd i{flex:1;height:34px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-family:'Roboto Mono';
+    color:#0b1014;font-weight:600;background:#222a33;}
+  .toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:12px 14px;font-size:13px;}
+  .sw-t{width:40px;height:23px;border-radius:999px;background:var(--red);position:relative;}
+  .sw-t::after{content:"";position:absolute;top:3px;right:3px;width:17px;height:17px;border-radius:50%;background:#fff;}
+  .delbtn{width:100%;padding:11px;border:1px solid rgba(255,77,109,.4);border-radius:9px;background:transparent;color:var(--red);font-size:13px;font-family:inherit;}
+
+  /* bottom info ribbon */
+  .ribbon{position:absolute;left:0;right:0;bottom:0;height:50px;display:flex;align-items:center;gap:0;
+    background:rgba(14,19,24,.96);border-top:1px solid var(--line);z-index:8;padding:0 8px;}
+  .ribbon .play{width:34px;height:34px;border-radius:8px;background:rgba(61,220,132,.14);border:1px solid var(--green);
+    color:var(--green);display:grid;place-items:center;font-size:13px;margin:0 8px;}
+  .stat{display:flex;flex-direction:column;padding:0 16px;border-right:1px solid var(--line);min-width:96px;}
+  .stat .k{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);}
+  .stat .v{font-family:'Roboto Mono';font-size:13px;margin-top:1px;}
+  .stat .v b{color:var(--accent);}
+  .ribbon .miniseg{flex:1;margin:0 16px;height:8px;border-radius:5px;overflow:hidden;display:flex;position:relative;}
+  .ribbon .miniseg span{height:100%;}
+  .ribbon .miniseg .ph{position:absolute;top:-3px;bottom:-3px;left:39%;width:2px;background:#fff;box-shadow:0 0 6px #fff;}
+  .ribbon .zoom{font-size:12px;color:var(--dim);font-family:'Roboto Mono';padding:0 14px;}
+
+  /* prompt pill */
+  .prompt{position:absolute;top:64px;left:50%;transform:translateX(-50%);font-size:13px;
+    background:rgba(20,26,33,.92);backdrop-filter:blur(12px);border:1px solid var(--line);
+    padding:9px 16px;border-radius:999px;z-index:6;}
+  .prompt b{color:var(--accent);}
+  /* preview floating */
+  .preview{position:absolute;left:262px;bottom:78px;width:206px;border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:7;box-shadow:0 12px 36px rgba(0,0,0,.5);}
+  .preview .feed{aspect-ratio:16/9;background:linear-gradient(160deg,#13202a,#1d5560 60%,#08222a);position:relative;}
+  .preview .feed i{position:absolute;top:7px;left:8px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+  .preview .pb{font-size:10px;color:var(--dim);padding:6px 9px;background:var(--panel);display:flex;}
+  .preview .pb b{margin-left:auto;color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- MAP -->
+  <div class="map">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="contour" width="120" height="120" patternUnits="userSpaceOnUse">
+          <path d="M0 60 Q 30 30, 60 60 T 120 60" fill="none" stroke="rgba(255,255,255,.03)" stroke-width="1"/>
+          <path d="M0 100 Q 40 70, 80 100 T 160 100" fill="none" stroke="rgba(255,255,255,.025)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="1440" height="900" fill="#0b1014"/>
+      <rect width="1440" height="900" fill="url(#contour)"/>
+      <!-- faux roads / parcels -->
+      <g stroke="rgba(255,255,255,.05)" stroke-width="1.5" fill="none">
+        <path d="M0 300 L500 320 L900 250 L1440 290"/>
+        <path d="M600 0 L640 400 L600 900"/>
+        <path d="M200 600 L800 640 L1440 600"/>
+      </g>
+      <g fill="rgba(45,212,191,.05)" stroke="rgba(45,212,191,.18)"><rect x="700" y="280" width="120" height="90" rx="4"/><rect x="300" y="500" width="90" height="70" rx="4"/></g>
+      <!-- route -->
+      <line x1="662" y1="380" x2="900" y2="230" stroke="var(--red)" stroke-width="2" stroke-dasharray="7 7" opacity=".8"/>
+      <circle cx="900" cy="230" r="13" fill="none" stroke="var(--red)" stroke-width="2"/><circle cx="900" cy="230" r="4" fill="var(--red)"/>
+      <path d="M250 660 C 410 600, 420 430, 550 420 S 710 470, 662 380 S 850 250, 1010 320 S 1190 470, 1240 560"
+            fill="none" stroke="var(--route)" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M250 660 C 410 600, 420 430, 550 420 S 710 470, 662 380 S 850 250, 1010 320 S 1190 470, 1240 560"
+            fill="none" stroke="rgba(51,177,255,.25)" stroke-width="12" stroke-linecap="round"/>
+      <g font-family="Antonio" font-size="13">
+        <circle cx="250" cy="660" r="10" fill="#0b1014" stroke="#3ddc84" stroke-width="3"/><text x="236" y="690" fill="#8a929c">1</text>
+        <circle cx="550" cy="420" r="10" fill="#0b1014" stroke="#3ddc84" stroke-width="3"/><text x="536" y="450" fill="#8a929c">2</text>
+        <circle cx="1010" cy="320" r="10" fill="#0b1014" stroke="#ffd23d" stroke-width="3"/><text x="996" y="350" fill="#8a929c">4</text>
+        <circle cx="1240" cy="560" r="10" fill="#0b1014" stroke="#ff8a3d" stroke-width="3"/>
+      </g>
+      <!-- selected wp -->
+      <circle cx="662" cy="380" r="15" fill="none" stroke="#fff" stroke-width="1" opacity=".5"/>
+      <circle cx="662" cy="380" r="10" fill="var(--route)" stroke="#fff" stroke-width="2.5"/>
+    </svg>
+  </div>
+
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="brand">GEAAR <b>·</b> Flight Path</div>
+    <div class="search">🔍 Search location or coordinates…</div>
+    <div class="crumbs">Project · <b>Orbit Alpha</b></div>
+    <div class="acts">
+      <div class="b">⤓ Export route</div>
+      <div class="b primary">▶ Preview flight</div>
+    </div>
+  </div>
+
+  <div class="prompt">Click the map to drop a waypoint · the route is your <b>flight path</b></div>
+
+  <!-- LEFT layers -->
+  <div class="layers">
+    <div class="lh">Layers <span class="cl">⌄</span></div>
+    <div class="lgroup">
+      <div class="lgrp-t">Flight paths</div>
+      <div class="lrow active"><span class="sw" style="background:var(--route)"></span>Orbit Alpha <span class="eye">👁</span></div>
+      <div class="lrow sub sel">↳ Waypoint 03 · selected</div>
+      <div class="lrow sub">↳ Waypoint 04</div>
+      <div class="lrow"><span class="sw" style="background:#5b9dff"></span>Survey Bravo <span class="cnt">3 wp</span></div>
+      <div class="lgrp-t">Reference</div>
+      <div class="lrow"><span class="sw" style="background:#2dd4bf"></span>Buildings <span class="eye">👁</span></div>
+      <div class="lrow"><span class="sw" style="background:#ffd23d"></span>No-fly zones <span class="eye" style="opacity:.4">👁</span></div>
+      <div class="lrow"><span class="sw" style="background:#8a929c"></span>Terrain contours <span class="eye">👁</span></div>
+    </div>
+    <div class="addlayer">＋ New flight path</div>
+  </div>
+
+  <!-- preview -->
+  <div class="preview"><div class="feed"><i></i></div><div class="pb">Camera POV <b>WP03 → T4</b></div></div>
+
+  <!-- map controls -->
+  <div class="mapctl">
+    <div class="compass"><small>N</small>◆</div>
+    <div class="c">＋</div>
+    <div class="c">−</div>
+    <div class="c">⌖</div>
+  </div>
+
+  <!-- RIGHT inspector -->
+  <div class="inspector">
+    <div class="insp-head">
+      <div class="eyebrow">Waypoint · Orbit Alpha</div>
+      <h2>Waypoint 03</h2>
+      <div class="coord">E 412 386 · N 6 248 970 · MGA</div>
+    </div>
+    <div class="insp-body">
+      <div class="field"><label>Height above ground</label>
+        <div class="stepper"><button>−</button><div class="v">80 m AGL</div><button>+</button></div></div>
+      <div class="field"><label>Cruise speed</label>
+        <div class="spd"><i style="background:var(--s1)">1</i><i style="background:var(--s2)">2</i><i style="background:var(--s3)">3</i><i style="opacity:.3">4</i><i style="opacity:.3">5</i></div></div>
+      <div class="field"><label>Look-at target</label>
+        <div class="toggle">Aim at target T4 (+40 m) <span class="sw-t"></span></div></div>
+      <div class="field"><label>Ground elevation</label>
+        <div class="stepper"><button></button><div class="v" style="color:var(--dim)">128 m AMSL</div><button></button></div></div>
+      <button class="delbtn">🗑 Delete waypoint</button>
+    </div>
+  </div>
+
+  <!-- bottom ribbon -->
+  <div class="ribbon">
+    <div class="play">❚❚</div>
+    <div class="stat"><div class="k">Waypoints</div><div class="v"><b>5</b></div></div>
+    <div class="stat"><div class="k">Route length</div><div class="v">1.9 km</div></div>
+    <div class="stat"><div class="k">Flight time</div><div class="v"><b>02:14</b></div></div>
+    <div class="miniseg">
+      <span style="flex:2;background:var(--s2)"></span><span style="flex:3;background:var(--s3)"></span>
+      <span style="flex:2;background:var(--s3)"></span><span style="flex:3;background:var(--s4)"></span><span style="flex:2.5;background:var(--s5)"></span>
+      <span class="ph"></span>
+    </div>
+    <div class="zoom">1 : 2 400 · z14</div>
+  </div>
+</div>
+</body>
+</html>

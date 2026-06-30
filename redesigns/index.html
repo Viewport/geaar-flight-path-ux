@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Path UX — Redesign Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08090c;
+    --card:#13161b;
+    --card2:#181c22;
+    --line:rgba(255,255,255,.09);
+    --ink:#eef1f4;
+    --dim:#8b929c;
+    --accent:#3da9ff;
+    --green:#3ddc84;
+    --amber:#ffb43d;
+    --red:#ff3b66;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Roboto',sans-serif;min-height:100%;}
+  body{padding:48px 40px 80px;}
+  .head{max-width:1200px;margin:0 auto 40px;}
+  .eyebrow{font-family:'Roboto Mono';font-size:12px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;}
+  h1{font-family:'Antonio';font-size:40px;font-weight:700;letter-spacing:.02em;margin:8px 0 12px;}
+  .lede{font-size:15px;color:var(--dim);max-width:760px;line-height:1.55;}
+  .lede b{color:var(--ink);font-weight:500;}
+  .legend{display:flex;gap:18px;margin-top:18px;font-size:12px;color:var(--dim);flex-wrap:wrap;}
+  .legend .t{display:inline-flex;align-items:center;gap:7px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;}
+
+  .grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    text-decoration:none;color:inherit;transition:.16s;display:flex;flex-direction:column;}
+  .card:hover{border-color:rgba(61,169,255,.5);transform:translateY(-3px);box-shadow:0 18px 50px rgba(0,0,0,.5);}
+  .thumb{height:172px;position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:#0b0e12;}
+  .thumb svg{position:absolute;inset:0;width:100%;height:100%;}
+  .num{position:absolute;top:12px;left:14px;font-family:'Antonio';font-size:13px;font-weight:700;
+    color:#06223a;background:var(--accent);padding:3px 9px;border-radius:6px;letter-spacing:.05em;z-index:2;}
+  .kind{position:absolute;top:12px;right:14px;font-size:10px;font-family:'Roboto Mono';letter-spacing:.08em;
+    padding:3px 8px;border-radius:6px;text-transform:uppercase;z-index:2;}
+  .kind.faithful{color:var(--green);border:1px solid rgba(61,220,132,.5);background:rgba(61,220,132,.08);}
+  .kind.bold{color:var(--amber);border:1px solid rgba(255,180,61,.5);background:rgba(255,180,61,.08);}
+  .kind.synthesis{color:#9aa6ff;border:1px solid rgba(124,140,255,.6);background:rgba(124,140,255,.1);}
+  .card.featured{border-color:rgba(124,140,255,.45);}
+  .card.featured:hover{border-color:rgba(124,140,255,.75);}
+  .body{padding:16px 18px 18px;flex:1;display:flex;flex-direction:column;}
+  .ctitle{font-family:'Antonio';font-size:21px;font-weight:600;}
+  .ctag{font-size:12px;color:var(--accent);font-family:'Roboto Mono';margin:3px 0 10px;letter-spacing:.04em;}
+  .cdesc{font-size:13.5px;color:var(--dim);line-height:1.5;flex:1;}
+  .open{margin-top:14px;font-size:12px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;}
+  .open .ar{color:var(--accent);transition:.16s;}
+  .card:hover .open .ar{transform:translateX(4px);}
+  .foot{max-width:1200px;margin:44px auto 0;font-size:12.5px;color:var(--dim);line-height:1.6;border-top:1px solid var(--line);padding-top:22px;}
+  .foot b{color:var(--ink);}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="eyebrow">GEAAR · Flight Path Authoring</div>
+    <h1>UI Redesign Explorations</h1>
+    <p class="lede">Eight directions for the drone flight-path authoring tool — fresh layouts, control schemes and interaction models to mine for ideas before the Unity build. <b>08 is a synthesis</b> of the elements you liked across 01, 02 and 05. Every concept depicts the <b>same scene &amp; feature set</b> (paths → waypoints with speed 1–5, height/AGL, look-at targets, camera preview, timeline) so they're directly comparable. All keep a dark canvas; the path line &amp; controls are designed per concept.</p>
+    <div class="legend">
+      <span class="t"><span class="dot" style="background:var(--green)"></span>Faithful re-layout — same controls, rethought arrangement</span>
+      <span class="t"><span class="dot" style="background:var(--amber)"></span>Bold reinvention — new interaction model</span>
+      <span class="t"><span class="dot" style="background:#7c8cff"></span>Synthesis — built from your feedback</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 01 -->
+    <a class="card" href="01-mission-control.html">
+      <div class="thumb">
+        <span class="num">01</span><span class="kind faithful">Faithful</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#070b0e"/>
+          <rect x="8" y="8" width="64" height="120" fill="#0a1116" stroke="rgba(120,220,190,.25)"/>
+          <rect x="266" y="8" width="66" height="120" fill="#0a1116" stroke="rgba(120,220,190,.25)"/>
+          <path d="M90 110 C 130 95, 150 55, 200 60 S 250 40, 256 70" fill="none" stroke="#39e6a0" stroke-width="2.5"/>
+          <circle cx="90" cy="110" r="3.5" fill="#39e6a0"/><circle cx="200" cy="60" r="3.5" fill="#ffd23d"/>
+          <rect x="8" y="138" width="324" height="26" fill="#0a1116" stroke="rgba(120,220,190,.25)"/>
+          <rect x="80" y="148" width="180" height="6" rx="2" fill="#3ddc84"/>
+          <text x="14" y="24" fill="#ffb43d" font-family="Antonio" font-size="9">TELEMETRY</text>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Mission Control HUD</div>
+        <div class="ctag">cockpit · telemetry · full-width flight strip</div>
+        <div class="cdesc">Leans hard into the aerospace command-centre feel: bracket-corner panels, segmented LCD readouts, a left telemetry rail and a full-width bottom "flight strip" timeline. Same controls, maximum density.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 02 -->
+    <a class="card" href="02-editorial-dark.html">
+      <div class="thumb">
+        <span class="num">02</span><span class="kind faithful">Faithful</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0b0c0f"/>
+          <rect x="0" y="0" width="34" height="172" fill="#0e0f13"/>
+          <rect x="240" y="0" width="100" height="172" fill="#0e0f13"/>
+          <rect x="9" y="12" width="18" height="18" rx="5" fill="#7c8cff"/>
+          <path d="M60 120 C 100 105, 110 60, 160 62 S 210 45, 218 72" fill="none" stroke="#7c8cff" stroke-width="2.5"/>
+          <circle cx="160" cy="62" r="14" fill="none" stroke="#7c8cff" stroke-width="1.5"/><circle cx="160" cy="62" r="3" fill="#7c8cff"/>
+          <rect x="252" y="20" width="76" height="9" rx="3" fill="#1c2029"/><rect x="252" y="40" width="76" height="22" rx="5" fill="#16181d" stroke="rgba(255,255,255,.08)"/>
+          <rect x="252" y="72" width="76" height="22" rx="5" fill="#16181d" stroke="rgba(255,255,255,.08)"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Editorial Dark</div>
+        <div class="ctag">premium · airy · contextual inspector</div>
+        <div class="cdesc">A calm, high-end NLE aesthetic — frosted glass cards, generous spacing, a single accent. Slim left icon rail plus a right inspector that shows only the selected waypoint's properties.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 03 -->
+    <a class="card" href="03-node-graph.html">
+      <div class="thumb">
+        <span class="num">03</span><span class="kind bold">Bold</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0a0d12"/>
+          <path d="M70 50 C 110 50, 100 95, 150 95" fill="none" stroke="#3da9ff" stroke-width="2"/>
+          <path d="M210 95 C 250 95, 240 60, 280 60" fill="none" stroke="#3ddc84" stroke-width="2"/>
+          <rect x="24" y="32" width="56" height="36" rx="6" fill="#161b22" stroke="rgba(255,255,255,.12)"/>
+          <rect x="150" y="74" width="62" height="44" rx="6" fill="#161b22" stroke="#3da9ff"/>
+          <rect x="280" y="42" width="48" height="34" rx="6" fill="#161b22" stroke="rgba(255,255,255,.12)"/>
+          <circle cx="80" cy="50" r="3" fill="#3da9ff"/><circle cx="150" cy="95" r="3" fill="#3da9ff"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Node-Graph Editor</div>
+        <div class="ctag">blueprint · wires · inline node editing</div>
+        <div class="cdesc">Reframes waypoints as connected nodes with inline property chips and flow wires — a Blender/Blueprint mental model. The selected node expands into an editable card; a minimap keeps the spatial view.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 04 -->
+    <a class="card" href="04-nle-tracks.html">
+      <div class="thumb">
+        <span class="num">04</span><span class="kind bold">Bold</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0a0c10"/>
+          <rect x="0" y="0" width="340" height="64" fill="#0b1016"/>
+          <path d="M40 50 C 80 40, 90 22, 140 24 S 180 18, 188 34" fill="none" stroke="#3da9ff" stroke-width="2"/>
+          <rect x="0" y="66" width="92" height="106" fill="#11141a"/>
+          <rect x="100" y="80" width="40" height="14" rx="2" fill="#3da9ff"/><rect x="142" y="80" width="60" height="14" rx="2" fill="#3ddc84"/><rect x="204" y="80" width="50" height="14" rx="2" fill="#ffd23d"/>
+          <path d="M100 120 L160 120 L210 108 L300 100" fill="none" stroke="#3ddc84" stroke-width="2"/>
+          <circle cx="160" cy="120" r="4" fill="#3da9ff"/>
+          <rect x="160" y="142" width="80" height="13" rx="2" fill="rgba(255,59,102,.3)" stroke="#ff3b66"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Multi-Track Timeline</div>
+        <div class="ctag">time-first · keyframe lanes · NLE</div>
+        <div class="cdesc">Makes time the primary axis: the bottom half becomes a multi-track editor with separate Speed, Height and Look-at lanes (segments, curves, keyframes). The 3D view shrinks to a reference at the top.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 05 -->
+    <a class="card" href="05-radial-touch.html">
+      <div class="thumb">
+        <span class="num">05</span><span class="kind bold">Bold</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0a0d11"/>
+          <path d="M50 90 C 90 70, 100 40, 150 44 S 200 30, 210 56" fill="none" stroke="#3da9ff" stroke-width="2.5"/>
+          <circle cx="150" cy="44" r="30" fill="none" stroke="rgba(61,220,132,.3)" stroke-width="3"/>
+          <circle cx="150" cy="44" r="13" fill="#3da9ff"/>
+          <circle cx="150" cy="8" r="11" fill="#181d24" stroke="rgba(255,255,255,.12)"/>
+          <circle cx="186" cy="44" r="11" fill="#181d24" stroke="rgba(255,59,102,.6)"/>
+          <circle cx="114" cy="44" r="11" fill="#181d24" stroke="rgba(255,59,102,.6)"/>
+          <rect x="0" y="132" width="340" height="40" rx="14" fill="#13171d" stroke="rgba(255,255,255,.1)"/>
+          <rect x="14" y="146" width="60" height="20" rx="6" fill="#181d24"/><rect x="82" y="146" width="60" height="20" rx="6" fill="#181d24" stroke="#3da9ff"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Radial Touch-First</div>
+        <div class="ctag">tablet · radial menu · bottom sheet</div>
+        <div class="cdesc">Designed for fingers: tap-and-hold a waypoint for a radial menu (arc for speed, drag-ring for height, tap for look-at), a swipeable bottom sheet for paths and waypoints, and big floating controls.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 06 -->
+    <a class="card" href="06-gis-map.html">
+      <div class="thumb">
+        <span class="num">06</span><span class="kind faithful">Faithful</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0b1014"/>
+          <g stroke="rgba(255,255,255,.05)"><path d="M0 60 L340 70"/><path d="M150 0 L160 172"/><path d="M0 120 L340 116"/></g>
+          <rect x="8" y="12" width="78" height="120" rx="8" fill="rgba(20,26,33,.92)" stroke="rgba(255,255,255,.09)"/>
+          <rect x="254" y="12" width="78" height="120" rx="8" fill="rgba(20,26,33,.92)" stroke="rgba(255,255,255,.09)"/>
+          <path d="M100 110 C 140 95, 150 55, 200 58 S 240 44, 248 70" fill="none" stroke="#33b1ff" stroke-width="3"/>
+          <circle cx="100" cy="110" r="3.5" fill="#3ddc84"/><circle cx="200" cy="58" r="5" fill="none" stroke="#ff4d6d" stroke-width="2"/>
+          <rect x="8" y="146" width="324" height="18" fill="rgba(14,19,24,.96)" stroke="rgba(255,255,255,.09)"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">GIS Map-App</div>
+        <div class="ctag">cartographic · layers · route inspector</div>
+        <div class="cdesc">Treats the flight path as a route in a Mapbox-Studio-style GIS app: a collapsible layers panel, floating round map controls and compass, a bottom stats ribbon, and a slide-in waypoint inspector.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 07 -->
+    <a class="card" href="07-unity-dock.html">
+      <div class="thumb">
+        <span class="num">07</span><span class="kind faithful">Faithful</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#1a1c1f"/>
+          <rect x="0" y="0" width="340" height="16" fill="#202327"/>
+          <rect x="4" y="20" width="78" height="148" fill="#232629" stroke="#121315"/>
+          <rect x="258" y="20" width="78" height="148" fill="#232629" stroke="#121315"/>
+          <rect x="86" y="20" width="168" height="92" fill="#232629" stroke="#121315"/>
+          <rect x="86" y="116" width="168" height="52" fill="#232629" stroke="#121315"/>
+          <path d="M110 90 C 140 78, 150 50, 190 52 S 220 42, 230 62" fill="none" stroke="#3da9ff" stroke-width="2"/>
+          <rect x="10" y="44" width="68" height="8" rx="2" fill="#2a4a66"/>
+          <rect x="96" y="128" width="40" height="9" rx="2" fill="#3da9ff"/><rect x="138" y="128" width="50" height="9" rx="2" fill="#3ddc84"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Editor Dock (DCC)</div>
+        <div class="ctag">hierarchy · inspector · dockable panels</div>
+        <div class="cdesc">Mirrors a 3D editor like Unity itself — a paths→waypoints Hierarchy, a component-style Inspector (Transform / Motion / Camera), and a docked bottom Timeline. The most directly portable layout for the rebuild.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+    <!-- 08 -->
+    <a class="card featured" href="08-floating-min.html">
+      <div class="thumb">
+        <span class="num" style="background:#7c8cff">08</span><span class="kind synthesis">Synthesis</span>
+        <svg viewBox="0 0 340 172" preserveAspectRatio="none">
+          <rect width="340" height="172" fill="#0b0c0f"/>
+          <path d="M50 130 C 95 115, 100 70, 150 66 S 200 48, 210 92 S 250 60, 290 78" fill="none" stroke="#7c8cff" stroke-width="3"/>
+          <circle cx="50" cy="130" r="4" fill="none" stroke="#5b9dff" stroke-width="2"/>
+          <circle cx="150" cy="66" r="4" fill="none" stroke="#3ddc84" stroke-width="2"/>
+          <circle cx="290" cy="78" r="4" fill="none" stroke="#ff8a3d" stroke-width="2"/>
+          <rect x="200" y="82" width="20" height="20" rx="3" fill="rgba(124,140,255,.15)" stroke="#7c8cff" stroke-width="1.5"/>
+          <circle cx="210" cy="92" r="4" fill="#7c8cff"/>
+          <rect x="196" y="44" width="74" height="13" rx="4" fill="#7c8cff"/>
+          <rect x="196" y="60" width="74" height="16" rx="5" fill="rgba(20,22,28,.9)" stroke="rgba(255,255,255,.14)"/>
+          <g fill="#cfd4ff"><circle cx="206" cy="68" r="1.6"/><circle cx="219" cy="68" r="1.6"/><circle cx="232" cy="68" r="1.6"/><circle cx="245" cy="68" r="1.6"/><circle cx="260" cy="68" r="1.6"/></g>
+          <rect x="8" y="10" width="60" height="40" rx="6" fill="rgba(20,22,28,.9)" stroke="rgba(255,255,255,.12)"/>
+          <rect x="92" y="150" width="156" height="14" rx="7" fill="rgba(20,22,28,.9)" stroke="rgba(255,255,255,.12)"/>
+          <rect x="120" y="155" width="30" height="4" rx="2" fill="#5b9dff"/><rect x="152" y="155" width="40" height="4" rx="2" fill="#3ddc84"/>
+        </svg>
+      </div>
+      <div class="body">
+        <div class="ctitle">Floating Minimal</div>
+        <div class="ctag">your picks, fused · soft indigo</div>
+        <div class="cdesc">A synthesis of your favourites: concept 5's clean floating shell (camera top-left, floating bottom timeline with waypoint ticks), concept 1's filled-and-boxed selected waypoint, and concept 2's waypoint window trimmed to a 5-icon bar.</div>
+        <span class="open">Open concept <span class="ar">→</span></span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="foot">
+    <b>How to read these:</b> each file is a self-contained static mockup (HTML/CSS, no logic) — open any of them directly in a browser. They're idea-generators, not working tools: study the layout, control groupings and metaphors, then cherry-pick whatever earns its place in the Unity build. Mix freely — e.g. the Editor-Dock hierarchy with the Mission-Control flight strip, or the Editorial inspector with the GIS layers panel.
+  </div>
+</body>
+</html>

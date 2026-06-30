@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08 · Floating Minimal — Flight Path Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0f;
+    --glass:rgba(20,22,28,.72);
+    --glass2:rgba(26,29,36,.82);
+    --line:rgba(255,255,255,.1);
+    --line2:rgba(255,255,255,.16);
+    --ink:#f1f3f6;
+    --dim:#8b929c;
+    --dim2:#5c626c;
+    --accent:#7c8cff;            /* soft indigo */
+    --accent-soft:rgba(124,140,255,.16);
+    --red:#ff5d73;
+    --green:#3ddc84;
+    --s1:#c77dff;--s2:#5b9dff;--s3:#3ddc84;--s4:#ffd23d;--s5:#ff8a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;}
+  .stage{position:fixed;inset:0;}
+  .stage>svg{position:absolute;inset:0;width:100%;height:100%;}
+  /* shared frosted floating surface */
+  .float{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--line);
+    box-shadow:0 14px 44px rgba(0,0,0,.5);}
+
+  /* ---------- top-left: brand + camera ---------- */
+  .tl{position:absolute;top:18px;left:18px;display:flex;flex-direction:column;gap:12px;width:236px;}
+  .brand{display:flex;align-items:center;gap:10px;border-radius:13px;padding:9px 14px;}
+  .brand .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#7c8cff,#5b9dff);
+    display:grid;place-items:center;font-weight:700;font-size:13px;color:#0b0c0f;}
+  .brand .nm{font-size:13px;font-weight:600;letter-spacing:.02em;}
+  .brand .nm small{display:block;font-size:10px;color:var(--dim);font-weight:400;letter-spacing:.08em;}
+  .camera{border-radius:14px;overflow:hidden;}
+  .camera .feed{aspect-ratio:16/10;background:linear-gradient(165deg,#13202b,#274a8a 40%,#1f5560 75%,#0a232a);position:relative;}
+  .camera .feed .hz{position:absolute;left:0;right:0;top:53%;height:1px;background:rgba(255,255,255,.22);}
+  .camera .feed .ret{position:absolute;inset:0;}
+  .camera .feed .ret::before,.camera .feed .ret::after{content:"";position:absolute;background:rgba(255,255,255,.4);}
+  .camera .feed .ret::before{left:50%;top:44%;width:1px;height:12%;}
+  .camera .feed .ret::after{top:50%;left:44%;height:1px;width:12%;}
+  .camera .rc{position:absolute;top:9px;left:10px;font-size:10px;letter-spacing:.06em;color:#fff;display:flex;align-items:center;gap:6px;}
+  .camera .rc i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+  .camera .bar{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--glass2);font-size:11px;color:var(--dim);}
+  .camera .bar b{color:var(--ink);font-weight:500;}
+  .camera .bar .mx{margin-left:auto;font-size:13px;color:var(--ink);}
+
+  /* ---------- top-center: prompt ---------- */
+  .prompt{position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:12.5px;color:var(--ink);
+    border-radius:999px;padding:9px 18px;}
+  .prompt b{color:var(--accent);}
+
+  /* ---------- top-right: icon buttons + paths ---------- */
+  .tr{position:absolute;top:18px;right:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-end;width:232px;}
+  .iconrow{display:flex;gap:10px;}
+  .ibtn{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:17px;color:var(--ink);}
+  .paths{width:100%;border-radius:14px;overflow:hidden;}
+  .paths .ph{display:flex;align-items:center;padding:11px 13px;font-size:12px;font-weight:600;border-bottom:1px solid var(--line);}
+  .paths .ph .add{margin-left:auto;color:var(--accent);font-size:16px;}
+  .prow{display:flex;align-items:center;gap:10px;padding:10px 13px;font-size:12.5px;}
+  .prow.active{background:var(--accent-soft);}
+  .prow .sw{width:9px;height:9px;border-radius:3px;}
+  .prow .ct{margin-left:auto;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+
+  /* ---------- bottom-left: stat chips ---------- */
+  .chips{position:absolute;bottom:24px;left:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+  .chip{font-size:11.5px;color:var(--dim);border-radius:999px;padding:7px 13px;}
+  .chip b{color:var(--ink);font-weight:600;}
+
+  /* ---------- bottom-right: actions ---------- */
+  .actions{position:absolute;bottom:24px;right:18px;display:flex;gap:10px;}
+  .abtn{height:42px;padding:0 16px;border-radius:12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
+  .abtn.icon{width:42px;padding:0;justify-content:center;font-size:16px;}
+  .abtn.primary{background:var(--accent);color:#0b0c0f;border:none;font-weight:600;box-shadow:0 8px 26px rgba(124,140,255,.4);}
+
+  /* ---------- bottom-center: floating timeline ---------- */
+  .timeline{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:600px;
+    border-radius:16px;padding:12px 16px 10px;display:flex;align-items:center;gap:15px;}
+  .play{width:40px;height:40px;flex:0 0 auto;border-radius:50%;background:var(--accent);color:#0b0c0f;
+    display:grid;place-items:center;font-size:14px;box-shadow:0 6px 20px rgba(124,140,255,.4);}
+  .tlmid{flex:1;}
+  .tltop{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:7px;font-variant-numeric:tabular-nums;}
+  .tlbar{height:8px;border-radius:6px;overflow:hidden;display:flex;position:relative;}
+  .tlbar span{height:100%;}
+  .tlbar .head{position:absolute;top:-4px;bottom:-4px;left:39%;width:2px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,.7);}
+  .tldots{position:relative;height:20px;margin-top:6px;}
+  .tldots i{position:absolute;top:2px;width:9px;height:9px;border-radius:50%;background:var(--glass2);
+    border:2px solid var(--dim);transform:translateX(-50%);}
+  .tldots i.sel{border-color:var(--accent);background:var(--accent);}
+  .tldots i b{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--dim);font-weight:500;}
+  .total{font-size:11.5px;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .total b{color:var(--ink);font-weight:600;}
+
+  /* ---------- selected waypoint window (01's box + tag, 02's 5 icons) ---------- */
+  .selwin{position:absolute;left:53.5%;top:25%;display:flex;flex-direction:column;align-items:flex-start;gap:8px;}
+  .tag{border-radius:10px 10px 10px 10px;overflow:hidden;}
+  .tag .t1{background:var(--accent);color:#0b0c0f;font-size:11px;font-weight:700;letter-spacing:.04em;
+    padding:5px 12px;display:flex;align-items:center;gap:8px;}
+  .tag .t1 .sub{font-weight:500;font-family:'Roboto Mono';font-size:10px;opacity:.75;}
+  .iconbar{display:flex;gap:5px;border-radius:13px;padding:6px;}
+  .iconbar .b{width:38px;height:38px;border-radius:9px;border:none;background:transparent;color:var(--ink);
+    font-size:15px;display:grid;place-items:center;position:relative;}
+  .iconbar .b:hover{background:rgba(255,255,255,.07);}
+  .iconbar .b.del{color:var(--red);}
+  .iconbar .b .cap{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:8.5px;color:var(--dim2);white-space:nowrap;}
+  .iconbar .sepd{width:1px;align-self:stretch;background:var(--line);margin:4px 2px;}
+
+  /* connector dot from window down to the waypoint box */
+  .leader{position:absolute;left:53.5%;top:25%;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- CANVAS -->
+  <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="bg8" cx="42%" cy="32%" r="92%">
+        <stop offset="0%" stop-color="#171a24"/><stop offset="58%" stop-color="#0e0f15"/><stop offset="100%" stop-color="#090a0d"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="900" fill="url(#bg8)"/>
+    <g stroke="rgba(255,255,255,.032)" stroke-width="1">
+      <path d="M0 180 H1440 M0 360 H1440 M0 540 H1440 M0 720 H1440"/>
+      <path d="M240 0 V900 M480 0 V900 M720 0 V900 M960 0 V900 M1200 0 V900"/>
+    </g>
+
+    <!-- look-at -->
+    <line x1="700" y1="350" x2="940" y2="210" stroke="var(--red)" stroke-width="1.6" stroke-dasharray="2 7" stroke-linecap="round" opacity=".8"/>
+    <circle cx="940" cy="210" r="11" fill="none" stroke="var(--red)" stroke-width="1.6"/>
+    <circle cx="940" cy="210" r="3" fill="var(--red)"/>
+    <text x="956" y="206" fill="#ff8aa0" font-size="12" font-family="Inter" font-weight="500">Look-at T4</text>
+
+    <!-- flight path (indigo) -->
+    <path d="M250 650 C 400 600, 410 440, 540 430 S 690 470, 700 350 S 850 230, 1000 300 S 1180 430, 1240 520"
+          fill="none" stroke="#7c8cff" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M250 650 C 400 600, 410 440, 540 430 S 690 470, 700 350 S 850 230, 1000 300 S 1180 430, 1240 520"
+          fill="none" stroke="rgba(124,140,255,.18)" stroke-width="11" stroke-linecap="round"/>
+
+    <!-- waypoint markers (01 look: hollow rings, speed-coloured) -->
+    <g font-family="Inter" font-size="12" font-weight="500">
+      <circle cx="250" cy="650" r="8" fill="#0e0f15" stroke="#5b9dff" stroke-width="2.5"/><text x="240" y="678" fill="#6f7682">01</text>
+      <circle cx="540" cy="430" r="8" fill="#0e0f15" stroke="#3ddc84" stroke-width="2.5"/><text x="530" y="458" fill="#6f7682">02</text>
+      <circle cx="1000" cy="300" r="8" fill="#0e0f15" stroke="#ffd23d" stroke-width="2.5"/><text x="990" y="328" fill="#6f7682">04</text>
+      <circle cx="1240" cy="520" r="8" fill="#0e0f15" stroke="#ff8a3d" stroke-width="2.5"/><text x="1230" y="548" fill="#6f7682">05</text>
+    </g>
+
+    <!-- selected waypoint 03 (01 look: filled dot + selection box) -->
+    <rect x="686" y="336" width="28" height="28" fill="none" stroke="#7c8cff" stroke-width="2" rx="3"/>
+    <rect x="686" y="336" width="28" height="28" fill="rgba(124,140,255,.12)" rx="3"/>
+    <circle cx="700" cy="350" r="6" fill="#7c8cff"/>
+    <text x="688" y="384" fill="#c9cfff" font-size="12" font-family="Inter" font-weight="600">03</text>
+  </svg>
+
+  <!-- TOP-LEFT: brand + camera -->
+  <div class="tl">
+    <div class="brand float">
+      <div class="mark">G</div>
+      <div class="nm">GEAAR<small>FLIGHT PATH</small></div>
+    </div>
+    <div class="camera float">
+      <div class="feed"><div class="hz"></div><div class="ret"></div><div class="rc"><i></i>LIVE</div></div>
+      <div class="bar">Camera · <b>WP03 → T4</b> <span class="mx">⤢</span></div>
+    </div>
+  </div>
+
+  <!-- TOP-CENTER: prompt -->
+  <div class="prompt float">Selected <b>Waypoint 03</b> — drag to move, or use the controls below it</div>
+
+  <!-- TOP-RIGHT: icons + paths -->
+  <div class="tr">
+    <div class="iconrow">
+      <div class="ibtn float" title="Maximise preview">⤢</div>
+      <div class="ibtn float" title="Walkthrough">🎩</div>
+    </div>
+    <div class="paths float">
+      <div class="ph">Paths <span class="add">＋</span></div>
+      <div class="prow active"><span class="sw" style="background:#7c8cff"></span>Orbit Alpha<span class="ct">Targeted · 5</span></div>
+      <div class="prow"><span class="sw" style="background:#5b9dff"></span>Survey Bravo<span class="ct">Fixed · 3</span></div>
+    </div>
+  </div>
+
+  <!-- SELECTED WAYPOINT WINDOW: 01 tag-box + 02 five icons -->
+  <div class="selwin">
+    <div class="tag float">
+      <div class="t1">WP 03 <span class="sub">80 m AGL · SPD 3</span></div>
+    </div>
+    <div class="iconbar float">
+      <button class="b" title="Move">✛<span class="cap">Move</span></button>
+      <button class="b" title="Height">↕<span class="cap">Height</span></button>
+      <button class="b" title="Speed">⏩<span class="cap">Speed</span></button>
+      <button class="b" title="Look-at">⌖<span class="cap">Look-at</span></button>
+      <span class="sepd"></span>
+      <button class="b del" title="Delete">🗑<span class="cap">Delete</span></button>
+    </div>
+  </div>
+
+  <!-- BOTTOM-LEFT: stat chips -->
+  <div class="chips">
+    <div class="chip float"><b>5</b> waypoints</div>
+    <div class="chip float"><b>1.9</b> km route</div>
+    <div class="chip float"><b>02:14</b> flight</div>
+  </div>
+
+  <!-- BOTTOM-CENTER: floating timeline -->
+  <div class="timeline float">
+    <div class="play">▶</div>
+    <div class="tlmid">
+      <div class="tltop"><span>00:51</span><span>Targeted · ease in/out</span><span>02:14</span></div>
+      <div class="tlbar">
+        <span style="flex:2;background:var(--s2)"></span>
+        <span style="flex:3;background:var(--s3)"></span>
+        <span style="flex:2;background:var(--s3)"></span>
+        <span style="flex:3;background:var(--s4)"></span>
+        <span style="flex:2.5;background:var(--s5)"></span>
+        <span class="head"></span>
+      </div>
+      <div class="tldots">
+        <i style="left:0%"><b>1</b></i>
+        <i style="left:24%"><b>2</b></i>
+        <i class="sel" style="left:48%"><b>3</b></i>
+        <i style="left:74%"><b>4</b></i>
+        <i style="left:100%"><b>5</b></i>
+      </div>
+    </div>
+    <div class="total">Total <b>02:14</b></div>
+  </div>
+
+  <!-- BOTTOM-RIGHT: actions -->
+  <div class="actions">
+    <div class="abtn icon float" title="Add waypoint">＋</div>
+    <div class="abtn icon float" title="Recentre">⌖</div>
+    <div class="abtn primary">▶ Preview flight</div>
+  </div>
+
+</div>
+</body>
+</html>
